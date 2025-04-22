@@ -113,9 +113,9 @@ else:
     
 
 
-st.divider()
-st.subheader("Selected Modules:")
-st.write(selMod[["Module Code","Module Title","Semester","Credits","Core/Optional","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+# st.divider()
+# st.subheader("Selected Modules:")
+# st.write(selMod[["Module Code","Module Title","Semester","Credits","Core/Optional","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
 
 
 st.divider()
@@ -321,8 +321,8 @@ for s,sem in enumerate(semesters):
         axN.legend(loc="upper left")
 
 
-handles, labels = ax.get_legend_handles_labels()
-handlesN, labelsN = axN.get_legend_handles_labels()
+# handles, labels = ax.get_legend_handles_labels()
+# handlesN, labelsN = axN.get_legend_handles_labels()
 # nText='# = Weekly deadlines'
 # annotation_patch = mpatches.Patch(facecolor='none', edgecolor='none', label=nText)
 # handles.append(annotation_patch)
