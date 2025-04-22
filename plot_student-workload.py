@@ -1,11 +1,17 @@
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 from matplotlib import pyplot as plt
 plt.ion()
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import streamlit as st
+
+# st.write('matplotlib',mpl.__version__)
+# st.write('numpy',np.__version__)
+# st.write('pandas',pd.__version__)
+# st.write('streamlit',st.__version__)
 
 def year2level(year,yrtype="UG"):
     if yrtype=="PG":
