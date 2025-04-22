@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 plt.ion()
-import datetime
-from joypy import joyplot
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
