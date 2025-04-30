@@ -21,6 +21,7 @@ def year2level(year,yrtype="UG"):
 
 # Set student properties
 academicYears=["2024/5","2025/6","2026/7"]
+easterWeeks={"2024/5":11,"2025/6":8,"2026/7":9}
 filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526.xlsx","2026/7":"AssessmentSchedule_2627.xlsx"}
 coursetypes=["UG","PG"]
 courses={"UG":["Physics","Astrophysics","Physics with Astronomy","Medical Physics"],"PG":["Physics", "Astrophysics", "Compound Semiconductor Physics"]}
@@ -52,19 +53,20 @@ coreCredits=coreMods["Credits"].sum()
 coreCreditsAutumn=coreMods[coreMods["Semester"]=="SEM1"]["Credits"].sum()+coreMods[coreMods["Semester"]=="SEMD"]["Credits"].sum()/2
 coreCreditsSpring=coreMods[coreMods["Semester"]=="SEM2"]["Credits"].sum()+coreMods[coreMods["Semester"]=="SEMD"]["Credits"].sum()/2
 
+nExamsAutumnCore=len(coreMods[(coreMods["Semester"]=="SEM1")&(coreMods["Exam Weight (%)"]>0)])
+nExamsSpringCore=len(coreMods[(coreMods["Semester"]=="SEM2")&(coreMods["Exam Weight (%)"]>0)])
+
 optCreditsAvail=120-coreCredits
 
 optMods=Modules[(Modules[colName]=="O")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
 st.divider()
 st.header("Module Selection")
+st.write("Your core modules are:",coreMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+    # st.subheader("Select Optional Modules")
 if coreCredits==120:
     st.write("You have no optional selections to make.")
     optModSelCode=[]
 else:
-    st.write("Your core modules are:",coreMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
-    # st.subheader("Select Optional Modules")
-    st.write("Core module credits (Autumn):",int(coreCreditsAutumn))
-    st.write("Core module credits (Spring):",int(coreCreditsSpring))
     st.subheader("Optional module selection")
     st.write("Remaining optional credits:",optCreditsAvail)
     st.write("Please consult SIMS for any further conditions of module selection.")
@@ -73,27 +75,36 @@ else:
     # Select Autumn modules
     optModListSEM1=optMods[optMods["Semester"]=="SEM1"]["Module Code"].to_list()
     if len(optModListSEM1)>0:
+        st.write("Core module credits (Autumn):", int(coreCreditsAutumn))
         st.write("Optional modules (Autumn Semester)",optMods[optMods["Semester"]=="SEM1"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
         optModSelCodeSEM1=st.multiselect("Select your Autumn Semester optional modules:",optModListSEM1)
     else:
+        st.write("You have no optional selections to make for Autumn semester")
         optModSelCodeSEM1=[]
     optCreditSelSEM1=optMods[optMods["Module Code"].isin(optModSelCodeSEM1)]["Credits"].sum()
     autumnCredits=optCreditSelSEM1 + coreCreditsAutumn
+    nExamsAutumn=nExamsAutumnCore + len(optMods[(optMods["Module Code"].isin(optModSelCodeSEM1))&(optMods["Exam Weight (%)"]>0)])
     st.write("Autumn semester credits:",int(autumnCredits))
-
+    st.write("Autumn semester exams:", nExamsAutumn)
+    
 
     # Select Spring modules
     optModListSEM2=optMods[optMods["Semester"]=="SEM2"]["Module Code"].to_list()
+    st.write("Core module credits (Spring):", int(coreCreditsSpring))
     if len(optModListSEM2)>0:
         st.write("Optional modules (Spring Semester)",optMods[optMods["Semester"]=="SEM2"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
         optModSelCodeSEM2=st.multiselect("Select your Spring Semester optional modules:",optModListSEM2)
+        
     else:
         optModSelCodeSEM2=[]
+
     optCreditSelSEM2=optMods[optMods["Module Code"].isin(optModSelCodeSEM2)]["Credits"].sum()
     springCredits=optCreditSelSEM2 + coreCreditsSpring
+    nExamsSpring=nExamsSpringCore + len(optMods[(optMods["Module Code"].isin(optModSelCodeSEM2))&(optMods["Exam Weight (%)"]>0)])
     st.write("Spring semester credits:",int(springCredits))
-
+    st.write("Spring semester exams:", nExamsSpring)
     optModSelCode = optModSelCodeSEM1 + optModSelCodeSEM2
+    
 
 optCreditSel=optMods[optMods["Module Code"].isin(optModSelCode)]["Credits"].sum()
 
@@ -279,6 +290,7 @@ x_ticks=np.arange(1,13)
 maxD=np.max([np.max(nDeadlines["Autumn"]),np.max(nDeadlines["Spring"])])+1
 y_ticksN=np.arange(0,maxD+1,1,dtype=int)
 semesters=["Autumn","Spring"]
+
 for s,sem in enumerate(semesters):
     dataContact=profileContact[sem]
     y_Contact=np.concatenate([[dataContact[0]],dataContact])
@@ -292,6 +304,7 @@ for s,sem in enumerate(semesters):
     ax.fill_between(x_values,y_Assess+y_Contact,color="b",alpha=0.3,step="pre")
     # ax.plot(x_values,y_AssessCore+y_Contact,"r",drawstyle="steps-pre",label="Core Workload")
     ax.plot(x_values,y_Contact,"k",linestyle=":",drawstyle="steps-pre",label="Contact Time")
+    
 
     # y_text=dataAssess + dataContact + 1
     # for t in range(len(nDeadlines[sem])):
@@ -304,7 +317,13 @@ for s,sem in enumerate(semesters):
     ax.set_ylabel("Workload (Hours)")
     if s==0:
         ax.legend(loc="upper left")
-
+        ax.axvline(11.5,color="gray",lw=6,alpha=0.5)
+        ax.annotate("Vacation",(11.75,ax.get_ylim()[1]),rotation="vertical",va="top")
+    if s==1:
+        eW=easterWeeks[academicYear]+0.5
+        ax.axvline(eW,color="gray",lw=6,alpha=0.5)
+        ax.annotate("Vacation",(eW+0.25,ax.get_ylim()[1]),rotation="vertical",va="top")
+                    
     dataNDeadlines=nDeadlines[sem]
     y_NDeadlines=np.concatenate([[dataNDeadlines[0]],dataNDeadlines])
     dataNDeadlinesBig=nDeadlinesBig[sem]
@@ -323,6 +342,12 @@ for s,sem in enumerate(semesters):
     axN.set_ylabel("# Deadlines")
     if s==0:
         axN.legend(loc="upper left")
+        axN.axvline(11.5,color="gray",lw=6,alpha=0.5)
+        axN.annotate("Vacation",(11.75,axN.get_ylim()[1]),rotation="vertical",va="top")
+    if s==1:
+        eW=easterWeeks[academicYear]+0.5
+        axN.axvline(eW,color="gray",lw=6,alpha=0.5)
+        axN.annotate("Vacation",(eW+0.25,axN.get_ylim()[1]),rotation="vertical",va="top")
 
 
 # handles, labels = ax.get_legend_handles_labels()
