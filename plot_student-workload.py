@@ -209,6 +209,7 @@ profileAssessCore={"Autumn":np.zeros(len(AutumnWeeks)),"Spring":np.zeros(len(Spr
 profileContact={"Autumn":np.zeros(len(AutumnWeeks)),"Spring":np.zeros(len(SpringWeeks))}
 nDeadlines={"Autumn":np.zeros(len(AutumnWeeks),dtype=int),"Spring":np.zeros(len(SpringWeeks),dtype=int)}
 nDeadlinesBig={"Autumn":np.zeros(len(AutumnWeeks),dtype=int),"Spring":np.zeros(len(SpringWeeks),dtype=int)}
+dlGrid={"Autumn":{},"Spring":{}}
 
 for wA,weekA in enumerate(AutumnWeeks):
     conTime=ContactTime[weekA].sum()
@@ -225,6 +226,7 @@ for a,assess in AssessDates.iterrows():
     assSum=assess["Summative"]
     assCore=assess["Core"]
     assessType=assess["CA type"]
+    assessName=assess["Description"]
     for wA in range(len(AutumnWeeks)):
         weekA=AutumnWeeks[wA]
         assessTime = assess[weekA] * modCredits*4
@@ -238,6 +240,12 @@ for a,assess in AssessDates.iterrows():
                 nDeadlines["Autumn"][wA] = nDeadlines["Autumn"][wA] + 1
                 if assessTime>=1:
                     nDeadlinesBig["Autumn"][wA] = nDeadlinesBig["Autumn"][wA] + 1
+                if not mod in dlGrid["Autumn"]:
+                    dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+                if not a in dlGrid["Autumn"][mod]["grid"]:
+                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"weeks":[],"weights":[]}
+                dlGrid["Autumn"][mod]["grid"][a]["weeks"].append(wA+1)
+                dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
             if profileSel=="Delta":
                 profileAssess["Autumn"][wA] = profileAssess["Autumn"][wA] + assessTime
                 if assCore:
@@ -266,6 +274,12 @@ for a,assess in AssessDates.iterrows():
                 nDeadlines["Spring"][wS] = nDeadlines["Spring"][wS] + 1
                 if assessTime>=1:
                     nDeadlinesBig["Spring"][wS] = nDeadlinesBig["Spring"][wS] + 1
+                if not mod in dlGrid["Spring"]:
+                    dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+                if not a in dlGrid["Spring"][mod]["grid"]:
+                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"weeks":[],"weights":[]}
+                dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
+                dlGrid["Spring"][mod]["grid"][a]["weights"].append(assess[weekS])
             if profileSel=="Delta":
                 profileAssess["Spring"][wS] = profileAssess["Spring"][wS] + assessTime
                 if assCore:
@@ -349,17 +363,119 @@ for s,sem in enumerate(semesters):
         axN.axvline(eW,color="gray",lw=6,alpha=0.5)
         axN.annotate("Vacation",(eW+0.25,axN.get_ylim()[1]),rotation="vertical",va="top")
 
-
-# handles, labels = ax.get_legend_handles_labels()
-# handlesN, labelsN = axN.get_legend_handles_labels()
-# nText='# = Weekly deadlines'
-# annotation_patch = mpatches.Patch(facecolor='none', edgecolor='none', label=nText)
-# handles.append(annotation_patch)
-# labels.append(nText)
 plt.tight_layout(rect=[0, 0, 1, 0.9])
-# fig.subplots_adjust(top=0.90)
-# fig.legend(handles+handlesN, labels+labelsN, loc='upper center', bbox_to_anchor=(0.5, 0.95),ncol=len(labels))
 st.pyplot(fig)
 
+# st.write(dlGrid)
+
+figG,axesG=plt.subplots(2,1,figsize=(8,8))
+assessColours=[]
+assessTypes=set()
+available_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'magenta', 'yellow', 'black']
+col_idx=0
+for s,sem in enumerate(semesters):
+    for m,mod in enumerate(dlGrid[sem].keys()):
+        for a,an in enumerate(dlGrid[sem][mod]["grid"].keys()):
+            aType=dlGrid[sem][mod]["grid"][an]["type"]
+            if aType not in assessTypes:
+                assessTypes.add(aType)
+                assessColours.append(available_colors[col_idx % len(available_colors)])
+                col_idx +=1
+
+def weight2sizecolorlabel(w):
+    if w<=0.05:
+        return (10,'blue',"<5%")
+    elif w<=0.1:
+        return (25,'green',"5-10%")
+    elif w<=0.3:
+        return (50,"orange","10-30%")
+    else:
+        return (100,"red",">30%")
+
+assessSeen={"Autumn":set(),"Spring":set()}
+handles={}
+labels={}
+for s,sem in enumerate(semesters):
+    axG=axesG[s]
+    yticks=[]
+    ylabels=[]
+    mods=list(dlGrid[sem].keys())
+    mods.sort(key=lambda x:dlGrid[sem][x]["semester"])
+    for m,mod in enumerate(mods):
+        nassess=len(dlGrid[sem][mod]["grid"])
+        for a,an in enumerate(dlGrid[sem][mod]["grid"].keys()):
+            aType=dlGrid[sem][mod]["grid"][an]["type"]
+            aName=dlGrid[sem][mod]["grid"][an]["name"]
+            if type(aName)==float:
+                aName="CA"
+            color=assessColours[list(assessTypes).index(aType)]
+            yass=m-0.5+(a+1)/(nassess+1)
+            yplot=[yass]*len(dlGrid[sem][mod]["grid"][an]["weeks"])
+            weights=dlGrid[sem][mod]["grid"][an]["weights"]
+            sizes=[]
+            colors=[]
+            labs=[]
+            for w,wt in enumerate(weights):
+                sizes.append(weight2sizecolorlabel(wt)[0])
+                colors.append(weight2sizecolorlabel(wt)[1])
+                labs.append(weight2sizecolorlabel(wt)[2])
+            # st.write(m,mod,nassess,a,dlGrid[sem][mod]["grid"][an]["type"],yass[0],len(dlGrid[sem][mod]["grid"][an]["weeks"]))
+            axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),label=labs[0],color=colors,linewidth=0)
+            yticks.append(yass)
+            ylabels.append(aName)
+        axG.text(-2,m,mod,ha="center",va="center",rotation="vertical",fontsize=8)
+    # st.write('types',assessTypes,'colors',assessColours)
+    # axG.set_yticks(np.arange(len(mods)))
+    # axG.set_yticklabels(mods)
+    axG.set_yticks(yticks)
+    axG.set_yticklabels(ylabels,fontsize=8)
+    axG.set_ylim(-0.5,len(mods)-0.5)
+    axG.set_xlabel(f"{sem} Semester Week")
+    axG.set_xticks(np.arange(13))
+    axG.set_xlim(0.5,12.5)
+    # axG.legend(loc="upper left")
+    # st.write(type(axG))
+    handles[sem],labels[sem]=axG.get_legend_handles_labels()
+    
+    if s==0:
+        axG.axvline(11.5,color="gray",lw=6,alpha=0.5)
+        # axG.annotate("Vacation",(11.625,axG.get_ylim()[0]),rotation="vertical",va="top")
+    if s==1:
+        eW=easterWeeks[academicYear]+0.5
+        axG.axvline(eW,color="gray",lw=6,alpha=0.5)
+        # axG.annotate("Vacation",(eW+0.125,axG.get_ylim()[0]),rotation="vertical",va="top")
+
+    axG.invert_yaxis()
+    axG.tick_params(axis="both",length=0)
+
+    # Create grid lines
+    axGx=axG.twiny()
+    axGx.set_xticks(np.arange(0.5,12.5))
+    axGx.set_xticklabels([])
+    axGx.grid(True, axis='x', linestyle='--', color='grey', alpha=0.6)
+    axGx.set_xlim(axG.get_xlim()[0],axG.get_xlim()[1])
+    axGx.tick_params(axis="both",length=0)
+    axGy=axG.twinx()
+    axGy.set_yticks(np.arange(0.5,len(mods)+0.5))
+    axGy.set_yticklabels([])
+    axGy.set_ylim(axG.get_ylim()[0],axG.get_ylim()[1])
+    axGy.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
+    axGy.tick_params(axis="both",length=0)
+    
+unique_handles = []
+unique_labels = []
+seen_labels = set()
+allHandles=handles["Autumn"]+handles["Spring"]
+allLabels=labels["Autumn"]+labels["Spring"]
+for handle, label in zip(allHandles, allLabels):
+    if label not in seen_labels:
+        unique_handles.append(handle)
+        unique_labels.append(label)
+        seen_labels.add(label)
+# plt.tight_layout(rect=[0.1, 0, 1, 0.9])
+plt.subplots_adjust(right=0.8)
+axesG[0].legend(handles=unique_handles, labels=unique_labels,loc='upper right',bbox_to_anchor=(1.25,1))
+st.pyplot(figG)
+st.write(unique_handles,unique_labels)
 st.stop()
 
