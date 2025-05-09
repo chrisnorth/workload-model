@@ -476,6 +476,6 @@ for handle, label in zip(allHandles, allLabels):
 plt.subplots_adjust(right=0.8)
 axesG[0].legend(handles=unique_handles, labels=unique_labels,loc='upper right',bbox_to_anchor=(1.25,1))
 st.pyplot(figG)
-st.write(unique_handles,unique_labels)
+
 st.stop()
 
