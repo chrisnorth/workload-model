@@ -413,7 +413,18 @@ if nMods>10:
     figh=15
 else:
     figh=8
-figG,axesG=plt.subplots(2,1,figsize=(8,figh))
+
+figh={"Autumn":len(dlGrid["Autumn"].keys()),"Spring":len(dlGrid["Spring"].keys())}
+# figG,axesG=plt.subplots(2,1,figsize=(8,figh))
+figG=[]
+axesG=[]
+figGA=plt.figure(figsize=(8,figh["Autumn"]),edgecolor='k',frameon=True)
+figG.append(figGA)
+axesG.append(plt.gca())
+figGS=plt.figure(figsize=(8,figh["Spring"]))
+figG.append(figGS)
+axesG.append(plt.gca())
+
 assessColours=[]
 assessTypes=set()
 available_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'magenta', 'yellow', 'black']
@@ -429,13 +440,13 @@ for s,sem in enumerate(semesters):
 
 def weight2sizecolorlabel(w):
     if w<=0.05:
-        return (10,'blue',"<5%")
+        return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%"}
     elif w<=0.1:
-        return (25,'green',"5-10%")
+        return {'ms':30,'ec':'green','lw':0,'fc':'green','lab':"5-10%"}
     elif w<=0.3:
-        return (50,"orange","10-30%")
+        return {'ms':80,'ec':'red','lw':1,'fc':'white','lab':"10-30%"}
     else:
-        return (100,"red",">30%")
+        return {'ms':100,'ec':'red','lw':0,'fc':'red','lab':">30%"}
 
 assessSeen={"Autumn":set(),"Spring":set()}
 handles={}
@@ -458,17 +469,22 @@ for s,sem in enumerate(semesters):
             yplot=[yass]*len(dlGrid[sem][mod]["grid"][an]["weeks"])
             weights=dlGrid[sem][mod]["grid"][an]["weights"]
             sizes=[]
-            colors=[]
+            edgecolors=[]
+            facecolors=[]
+            linewidths=[]
             labs=[]
             for w,wt in enumerate(weights):
-                sizes.append(weight2sizecolorlabel(wt)[0])
-                colors.append(weight2sizecolorlabel(wt)[1])
-                labs.append(weight2sizecolorlabel(wt)[2])
+                sizes.append(weight2sizecolorlabel(wt)["ms"])
+                edgecolors.append(weight2sizecolorlabel(wt)["ec"])
+                facecolors.append(weight2sizecolorlabel(wt)["fc"])
+                linewidths.append(weight2sizecolorlabel(wt)["lw"])
+                labs.append(weight2sizecolorlabel(wt)["lab"])
             # st.write(m,mod,nassess,a,dlGrid[sem][mod]["grid"][an]["type"],yass[0],len(dlGrid[sem][mod]["grid"][an]["weeks"]))
-            axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),label=labs[0],color=colors,linewidth=0)
+            axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),
+                        label=labs[0],edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
             yticks.append(yass)
             ylabels.append(aName)
-        axG.text(-2,m,mod,ha="center",va="center",rotation="vertical",fontsize=8)
+        axG.text(-2,m,mod,ha="center",va="center",rotation="vertical",fontsize=10)
     # st.write('types',assessTypes,'colors',assessColours)
     # axG.set_yticks(np.arange(len(mods)))
     # axG.set_yticklabels(mods)
@@ -492,7 +508,8 @@ for s,sem in enumerate(semesters):
 
     axG.invert_yaxis()
     axG.tick_params(axis="both",length=0)
-
+    axG.set_title(f"{title}\n{sem} Semester")
+    
     # Create grid lines
     axGx=axG.twiny()
     axGx.set_xticks(np.arange(0.5,12.5))
@@ -518,10 +535,14 @@ for handle, label in zip(allHandles, allLabels):
         unique_labels.append(label)
         seen_labels.add(label)
 # plt.tight_layout(rect=[0.1, 0, 1, 0.9])
-plt.subplots_adjust(right=0.8,top=0.9)
-axesG[0].set_title(title)
-axesG[0].legend(handles=unique_handles, labels=unique_labels,loc='upper right',bbox_to_anchor=(1.25,1))
-st.pyplot(figG)
+
+for s,sem in enumerate(semesters):
+    axesG[s].legend(handles=unique_handles, labels=unique_labels,loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
+    # figG[s].subplots_adjust(right=0.8,top=0.9)
+    axesG[s].set_position([0,0,0.8,figh[sem]/(figh[sem]+1)])
+    # figG[s].patches.extend([plt.Rectangle((0, 0), 1, 1, fill=None, edgecolor='red',transform=figG[s].transFigure)])
+    # figG[s].patches.extend([plt.Rectangle((0, 0), 0.8, figh[sem]/(figh[sem]+1), fill=None, edgecolor='blue',transform=figG[s].transFigure)])
+    st.pyplot(figG[s])
 
 st.stop()
 
