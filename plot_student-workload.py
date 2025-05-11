@@ -481,7 +481,7 @@ for s,sem in enumerate(semesters):
                 labs.append(weight2sizecolorlabel(wt)["lab"])
             # st.write(m,mod,nassess,a,dlGrid[sem][mod]["grid"][an]["type"],yass[0],len(dlGrid[sem][mod]["grid"][an]["weeks"]))
             axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),
-                        label=labs[0],edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
+                        edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
             yticks.append(yass)
             ylabels.append(aName)
         axG.text(-2,m,mod,ha="center",va="center",rotation="vertical",fontsize=10)
@@ -524,25 +524,44 @@ for s,sem in enumerate(semesters):
     axGy.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
     axGy.tick_params(axis="both",length=0)
     
-unique_handles = []
-unique_labels = []
-seen_labels = set()
-allHandles=handles["Autumn"]+handles["Spring"]
-allLabels=labels["Autumn"]+labels["Spring"]
-for handle, label in zip(allHandles, allLabels):
-    if label not in seen_labels:
-        unique_handles.append(handle)
-        unique_labels.append(label)
-        seen_labels.add(label)
+    # Create manual legend
+    legendWeights=[0.05,0.1,0.3,0.5]
+    legendMarkers=[]
+    for w,wt in enumerate(legendWeights):
+        size=weight2sizecolorlabel(wt)["ms"]
+        edgecolor=weight2sizecolorlabel(wt)["ec"]
+        facecolor=weight2sizecolorlabel(wt)["fc"]
+        linewidth=weight2sizecolorlabel(wt)["lw"]
+        lab=weight2sizecolorlabel(wt)["lab"]
+        legendMarkers.append(axG.scatter(0.5,0.5,s=size,
+                            label=lab,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
+    axesG[s].legend(loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
+    for l,lm in enumerate(legendMarkers):
+        lm.remove()
+
+    axesG[s].set_position([0,0,0.8,figh[sem]/(figh[sem]+1)])
+    st.pyplot(figG[s])
+
+# # Old method for legends
+# unique_handles = []
+# unique_labels = []
+# seen_labels = set()
+# allHandles=handles["Autumn"]+handles["Spring"]
+# allLabels=labels["Autumn"]+labels["Spring"]
+# for handle, label in zip(allHandles, allLabels):
+#     if label not in seen_labels:
+#         unique_handles.append(handle)
+#         unique_labels.append(label)
+#         seen_labels.add(label)
 # plt.tight_layout(rect=[0.1, 0, 1, 0.9])
 
-for s,sem in enumerate(semesters):
-    axesG[s].legend(handles=unique_handles, labels=unique_labels,loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
+# for s,sem in enumerate(semesters):
+    # axesG[s].legend(handles=unique_handles, labels=unique_labels,loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
     # figG[s].subplots_adjust(right=0.8,top=0.9)
-    axesG[s].set_position([0,0,0.8,figh[sem]/(figh[sem]+1)])
+    # axesG[s].set_position([0,0,0.8,figh[sem]/(figh[sem]+1)])
     # figG[s].patches.extend([plt.Rectangle((0, 0), 1, 1, fill=None, edgecolor='red',transform=figG[s].transFigure)])
     # figG[s].patches.extend([plt.Rectangle((0, 0), 0.8, figh[sem]/(figh[sem]+1), fill=None, edgecolor='blue',transform=figG[s].transFigure)])
-    st.pyplot(figG[s])
+    # st.pyplot(figG[s])
 
 st.stop()
 
