@@ -263,7 +263,7 @@ for a,assess in AssessDates.iterrows():
             if np.isfinite(assess["Hours"]):
                 assessTime = assess["Hours"]
             assessWeeks = assess["Duration"]
-            wR=np.arange(wA-assessWeeks,wA)+1
+            wR=np.arange(wA-assessWeeks,wA,dtype=int)+1
             wX0=np.min(wR)
             if assSum=="Y":
                 nDeadlines["Autumn"][wA] = nDeadlines["Autumn"][wA] + 1
@@ -297,7 +297,7 @@ for a,assess in AssessDates.iterrows():
             if np.isfinite(assess["Hours"]):
                 assessTime = assess["Hours"]
             assessWeeks = assess["Duration"]
-            wR=np.arange(wS-assessWeeks,wS)+1
+            wR=np.arange(wS-assessWeeks,wS,dtype=int)+1
             wX0=np.min(wR)
             if assSum=="Y":
                 nDeadlines["Spring"][wS] = nDeadlines["Spring"][wS] + 1
@@ -398,7 +398,8 @@ if not showAllMods:
     st.pyplot(fig)
 
 # st.write(dlGrid)
-
+st.divider()
+st.header("Deadline Grids")
 if showAllProgs:
     title=f"All Deadlines for {studentCourseType} student in Year {studentYear} (all modules)"
 elif showAllMods:
