@@ -269,12 +269,16 @@ for a,assess in AssessDates.iterrows():
                 nDeadlines["Autumn"][wA] = nDeadlines["Autumn"][wA] + 1
                 if assessTime>=1:
                     nDeadlinesBig["Autumn"][wA] = nDeadlinesBig["Autumn"][wA] + 1
-                if not mod in dlGrid["Autumn"]:
-                    dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            if not mod in dlGrid["Autumn"]:
+                dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Autumn"][mod]["grid"]:
                     dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"weeks":[],"weights":[]}
                 dlGrid["Autumn"][mod]["grid"][a]["weeks"].append(wA+1)
+            if assSum=="Y":
                 dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
+            elif assSum=="N":
+                dlGrid["Autumn"][mod]["grid"][a]["weights"].append(0)
             if profileSel=="Delta":
                 profileAssess["Autumn"][wA] = profileAssess["Autumn"][wA] + assessTime
                 if assCore:
@@ -303,12 +307,17 @@ for a,assess in AssessDates.iterrows():
                 nDeadlines["Spring"][wS] = nDeadlines["Spring"][wS] + 1
                 if assessTime>=1:
                     nDeadlinesBig["Spring"][wS] = nDeadlinesBig["Spring"][wS] + 1
-                if not mod in dlGrid["Spring"]:
-                    dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            if not mod in dlGrid["Spring"]:
+                dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Spring"][mod]["grid"]:
                     dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"weeks":[],"weights":[]}
                 dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
+            if assSum=="Y":
                 dlGrid["Spring"][mod]["grid"][a]["weights"].append(assess[weekS])
+            elif assSum=="N":
+                dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
+                dlGrid["Spring"][mod]["grid"][a]["weights"].append(0)
             if profileSel=="Delta":
                 profileAssess["Spring"][wS] = profileAssess["Spring"][wS] + assessTime
                 if assCore:
@@ -440,7 +449,9 @@ for s,sem in enumerate(semesters):
                 col_idx +=1
 
 def weight2sizecolorlabel(w):
-    if w<=0.05:
+    if w==0:
+        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative"}
+    elif w<=0.05:
         return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%"}
     elif w<=0.1:
         return {'ms':30,'ec':'green','lw':0,'fc':'green','lab':"5-10%"}
@@ -526,7 +537,7 @@ for s,sem in enumerate(semesters):
     axGy.tick_params(axis="both",length=0)
     
     # Create manual legend
-    legendWeights=[0.05,0.1,0.3,0.5]
+    legendWeights=[0,0.05,0.1,0.3,0.5]
     legendMarkers=[]
     for w,wt in enumerate(legendWeights):
         size=weight2sizecolorlabel(wt)["ms"]
