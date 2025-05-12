@@ -214,7 +214,8 @@ AssessDatesAll = pd.concat([AssessDatesIn, msc_assessments], ignore_index=True)
 
 # Reduce to list of selected modules
 AssessDates=AssessDatesAll[AssessDatesAll["Module Code"].isin(selModList)]
-AssessDates["Core"]=AssessDates["Module Code"].isin(coreModList)
+inCore=AssessDates["Module Code"].isin(coreModList)
+AssessDates.loc[inCore,"Core"]=True
 ContactTime=ContactTimeIn[ContactTimeIn["Module Code"].isin(selModList)]
 
 AutumnWeeks=[]
