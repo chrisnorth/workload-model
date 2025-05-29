@@ -17,8 +17,8 @@ def streamlit_cloud():
     # to a specific port (e.g., 8501).
     # When running locally, this variable might not be set or might be set differently.
     # Also, Streamlit Cloud often sets an environment variable like 'streamlit_cloud_config'.
-    st.write("HOSTNAME",os.environ.get("HOSTNAME"))
-    st.write("DEBUG os.environ",os.environ)
+    # st.write("HOSTNAME",os.environ.get("HOSTNAME"))
+    # st.write("DEBUG os.environ",os.environ)
     return os.environ.get("HOSTNAME")=="streamlit"
 
 
