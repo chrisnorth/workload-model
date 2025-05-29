@@ -17,12 +17,9 @@ def streamlit_cloud():
     # to a specific port (e.g., 8501).
     # When running locally, this variable might not be set or might be set differently.
     # Also, Streamlit Cloud often sets an environment variable like 'streamlit_cloud_config'.
-    st.write("STREAMLIT_SERVER_PORT",os.environ.get("STREAMLIT_SERVER_PORT"))
-    st.write("STREAMLIT_CLOUD_ADDRESS",os.environ.get("STREAMLIT_CLOUD_ADDRESS"))
-    st.write("SERVER_SOFTWARE",os.environ.get("SERVER_SOFTWARE"))
+    st.write("HOSTNAME",os.environ.get("HOSTNAME"))
     st.write("DEBUG os.environ",os.environ)
-    return os.environ.get("STREAMLIT_SERVER_PORT") is not None and \
-           os.environ.get("STREAMLIT_CLOUD_ADDRESS") is not None # Or another specific Streamlit Cloud env var
+    return os.environ.get("HOSTNAME")=="streamlit"
 
 
 # st.write('matplotlib',mpl.__version__)
