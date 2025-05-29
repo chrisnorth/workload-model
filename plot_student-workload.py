@@ -52,7 +52,6 @@ if streamlit_cloud():
     st.info('Running on streamlit cloud.')
 else:
     st.info('Running locally')
-    savePlots=st.radio("Save plots locally?",["Yes","No"],index=1)
 
 st.header("Select your year and course")
 academicYear = st.radio("Select the academic year:",academicYears,index=1)
@@ -69,10 +68,12 @@ if studentCourse=="Show modules for all programmes":
     showAllProgs=True
     st.write(f"**Showing All modules for {studentCourseType} student in Year {studentYear} (Level {studentLevel}) of study**")
     shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_All'
+    savePlots=st.radio("Save plots locally?",["Yes","No"],index=1)
 else:
     showAllProgs=False
     st.write(f"**You are a {studentCourseType} {studentCourse} student in Year {studentYear} (Level {studentLevel}) of study**")
     shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_{studentCourse}'
+    savePlots=False
 
 # st.info(f"column {colName}")
 # st.stop()
