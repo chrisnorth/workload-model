@@ -73,7 +73,10 @@ if studentCourse=="Show modules for all programmes":
     showAllProgs=True
     st.write(f"**Showing All modules for {studentCourseType} student in Year {studentYear} (Level {studentLevel}) of study**")
     shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_All'
-    savePlots=st.radio("Save plots locally?",["Yes","No"],index=1)
+    if streamlit_cloud():
+        savePlots="No"
+    else:
+        savePlots=st.radio("Save plots locally?",["Yes","No"],index=1)
 else:
     showAllProgs=False
     st.write(f"**You are a {studentCourseType} {studentCourse} student in Year {studentYear} (Level {studentLevel}) of study**")
