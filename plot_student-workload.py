@@ -20,19 +20,19 @@ def year2level(year,yrtype="UG"):
         return year+3
 
 # Set student properties
-academicYears=["2024/5","2025/6","2025/6 (v2)","2026/7"]
-easterWeeks={"2024/5":11,"2025/6":8,"2025/6 (v2)":8,"2026/7":9}
-filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526.xlsx","2025/6 (v2)":"AssessmentSchedule_2526_v2.xlsx","2026/7":"AssessmentSchedule_2627.xlsx"}
+academicYears=["2024/5","2025/6","2026/7"]
+easterWeeks={"2024/5":11,"2025/6":8,"2026/7":9}
+filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7":"AssessmentSchedule_2627.xlsx"}
 coursetypes=["UG","PG"]
-courses={"UG":["Physics","Astrophysics","Physics with Astronomy","Medical Physics","Show modules for all programmes"],
-         "PG":["Physics", "Astrophysics", "Compound Semiconductor Physics","Show modules for all programmes"]}
+courses={"UG":["Show modules for all programmes","Physics","Astrophysics","Physics with Astronomy","Medical Physics"],
+         "PG":["Show modules for all programmes","Physics", "Astrophysics", "Compound Semiconductor Physics"]}
 years=[1,2,3,4]
 
 columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronomy":"PhysAstro","Medical Physics":"MedPhys","Show modules for all programmes":"Physics"},
          "PG":{"Physics":"MScPhysics", "Astrophysics":"MScAstro","Compound Semiconductor Physics":"MScCSPhysics","Show modules for all programmes":"Physics"}}
 
 st.header("Select your year and course")
-academicYear = st.radio("Select your programme type:",academicYears)
+academicYear = st.radio("Select the academic year:",academicYears,index=1)
 studentCourseType = st.radio("Select your programme type:",coursetypes)
 if studentCourseType=="UG":
     studentYear = st.radio("Select your year of study:",years)
@@ -41,13 +41,17 @@ else:
 studentCourse = st.radio("Select your programme:",courses[studentCourseType])
 studentLevel=year2level(studentYear,studentCourseType)
 
+savePlots=st.radio("Save plots locally?",["Yes","No"],index=1)
+
 colName=columns[studentCourseType][studentCourse]
 if studentCourse=="Show modules for all programmes":
     showAllProgs=True
     st.write(f"**Showing All modules for {studentCourseType} student in Year {studentYear} (Level {studentLevel}) of study**")
+    shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_All'
 else:
     showAllProgs=False
     st.write(f"**You are a {studentCourseType} {studentCourse} student in Year {studentYear} (Level {studentLevel}) of study**")
+    shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_{studentCourse}'
 
 # st.info(f"column {colName}")
 # st.stop()
@@ -429,6 +433,13 @@ if not showAllMods:
 
     plt.tight_layout(rect=[0, 0, 1, 0.9])
     st.pyplot(fig)
+    if savePlots=="Yes":
+        try:
+            fileOut=f'plots/workload_{shortCode}.png'
+            plt.savefig(fileOut)
+            st.info('Plot saved to',fileOut)
+        except:
+            st.info('Unable to save plot')
 
 # st.write(dlGrid)
 st.divider()
@@ -584,7 +595,14 @@ for s,sem in enumerate(semesters):
 
     axesG[s].set_position([0,0,0.8,figh[sem]/(figh[sem]+1)])
     st.pyplot(figG[s])
-
+    if savePlots=="Yes":
+        try:
+            fileOut=f'plots/deadlines_{shortCode}_{sem}.png'
+            figG[s].savefig(fileOut)
+            st.write('Plot saved to',fileOut)
+        except:
+            st.info('Unable to save plot')
+            
 # # Old method for legends
 # unique_handles = []
 # unique_labels = []
