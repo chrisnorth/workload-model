@@ -63,6 +63,10 @@ else:
 studentCourse = st.radio("Select your programme:",courses[studentCourseType])
 studentLevel=year2level(studentYear,studentCourseType)
 
+if studentYear==4 and studentCourse=="Medical Physics":
+    st.warning("ERROR: No Year 4 for Medical Physics")
+    st.stop()
+
 colName=columns[studentCourseType][studentCourse]
 if studentCourse=="Show modules for all programmes":
     showAllProgs=True
@@ -80,12 +84,16 @@ else:
 # Set core modules
 fileIn=filenames[academicYear]
 Modules=pd.read_excel(fileIn,"Modules")
-if showAllProgs:
-    coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
-    coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
-else:
-    coreMods=Modules[(Modules[colName]=="C")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
-    coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+try:
+    if showAllProgs:
+        coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+    else:
+        coreMods=Modules[(Modules[colName]=="C")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+except:
+    st.error(f"ERROR reading data for {studentCourseType} {studentCourse} from {academicYear}")
+    st.stop()
 
 coreModList=coreMods["Module Code"].to_list()
 selModList=coreModList
