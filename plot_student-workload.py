@@ -77,7 +77,7 @@ else:
     showAllProgs=False
     st.write(f"**You are a {studentCourseType} {studentCourse} student in Year {studentYear} (Level {studentLevel}) of study**")
     shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_{studentCourse}'
-    savePlots=False
+    savePlots="No"
 
 # st.info(f"column {colName}")
 # st.stop()
