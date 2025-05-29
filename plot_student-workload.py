@@ -33,16 +33,20 @@ def year2level(year,yrtype="UG"):
         return year+3
 
 # Set student properties
-academicYears=["2024/5","2025/6","2026/7"]
-easterWeeks={"2024/5":11,"2025/6":8,"2026/7":9}
-filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7":"AssessmentSchedule_2627.xlsx"}
+academicYears=["2024/5","2025/6","2026/7 (TBC)"]
+easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":9}
+filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (TBC)":"AssessmentSchedule_2627.xlsx"}
 coursetypes=["UG","PG"]
 courses={"UG":["Show modules for all programmes","Physics","Astrophysics","Physics with Astronomy","Medical Physics"],
-         "PG":["Show modules for all programmes","Physics", "Astrophysics", "Compound Semiconductor Physics"]}
+         "PG":["Show modules for all programmes","Physics", "Astrophysics", "Data Intensive Physics", "Data Intensive Astrophysics","Compound Semiconductor Physics","CDT Compound Semiconductor Physics"]}
 years=[1,2,3,4]
 
-columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronomy":"PhysAstro","Medical Physics":"MedPhys","Show modules for all programmes":"Physics"},
-         "PG":{"Physics":"MScPhysics", "Astrophysics":"MScAstro","Compound Semiconductor Physics":"MScCSPhysics","Show modules for all programmes":"Physics"}}
+columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronomy":"PhysAstro","Medical Physics":"MedPhys","Show modules for all programmes":"AllUG"},
+         "PG":{"Physics":"MScPhysics", "Astrophysics":"MScAstro",
+               "Data Intensive Physics":"MScDataPhys",
+               "Data Intensive Astrophysics":"MScDataAstro",
+               "Compound Semiconductor Physics":"MScCSPhysics","CDT Compound Semiconductor Physics":"CDTCSPhysics",
+               "Show modules for all programmes":"AllPG"}}
 
 if streamlit_cloud():
     st.info('Running on streamlit cloud.')
@@ -77,8 +81,10 @@ fileIn=filenames[academicYear]
 Modules=pd.read_excel(fileIn,"Modules")
 if showAllProgs:
     coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+    coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
 else:
     coreMods=Modules[(Modules[colName]=="C")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+    coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
 
 coreModList=coreMods["Module Code"].to_list()
 selModList=coreModList
@@ -531,6 +537,10 @@ for s,sem in enumerate(semesters):
     mods.sort(key=lambda x:dlGrid[sem][x]["semester"])
     for m,mod in enumerate(mods):
         nassess=len(dlGrid[sem][mod]["grid"])
+        coreMod= mod in coreModsAll
+        if coreMod:
+            coreRect=mpatches.Rectangle((0.5,m-0.5),12,1,facecolor='lightgray',alpha=0.5)
+            axG.add_patch(coreRect)
         for a,an in enumerate(dlGrid[sem][mod]["grid"].keys()):
             aType=dlGrid[sem][mod]["grid"][an]["type"]
             aName=dlGrid[sem][mod]["grid"][an]["name"]
@@ -556,7 +566,10 @@ for s,sem in enumerate(semesters):
                         edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
             yticks.append(yass)
             ylabels.append(aName)
-        modtxt=axG.text(-2,m,mod,ha="center",va="center",rotation="vertical",fontsize=10)
+        if coreMod:
+            modtxt=axG.text(-2,m,f'{mod}\n(Core)',ha="center",va="center",rotation="vertical",fontsize=10)
+        else:
+            modtxt=axG.text(-2,m,f'{mod}\n(Optional)',ha="center",va="center",rotation="vertical",fontsize=10)
         extra_artists.append(modtxt)
     # st.write('types',assessTypes,'colors',assessColours)
     # axG.set_yticks(np.arange(len(mods)))
