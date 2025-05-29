@@ -7,6 +7,19 @@ import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import streamlit as st
+import os
+
+def streamlit_cloud():
+    """
+    Checks if the Streamlit app is currently running on Streamlit Community Cloud.
+    """
+    # Streamlit Cloud sets the 'STREAMLIT_SERVER_PORT' environment variable
+    # to a specific port (e.g., 8501).
+    # When running locally, this variable might not be set or might be set differently.
+    # Also, Streamlit Cloud often sets an environment variable like 'streamlit_cloud_config'.
+    return os.environ.get("STREAMLIT_SERVER_PORT") is not None and \
+           os.environ.get("STREAMLIT_CLOUD_ADDRESS") is not None # Or another specific Streamlit Cloud env var
+
 
 # st.write('matplotlib',mpl.__version__)
 # st.write('numpy',np.__version__)
@@ -31,6 +44,12 @@ years=[1,2,3,4]
 columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronomy":"PhysAstro","Medical Physics":"MedPhys","Show modules for all programmes":"Physics"},
          "PG":{"Physics":"MScPhysics", "Astrophysics":"MScAstro","Compound Semiconductor Physics":"MScCSPhysics","Show modules for all programmes":"Physics"}}
 
+if streamlit_cloud():
+    st.info('Running on streamlit cloud.')
+else:
+    st.info('Running locally')
+    savePlots=st.radio("Save plots locally?",["Yes","No"],index=1)
+
 st.header("Select your year and course")
 academicYear = st.radio("Select the academic year:",academicYears,index=1)
 studentCourseType = st.radio("Select your programme type:",coursetypes)
@@ -40,8 +59,6 @@ else:
     studentYear=1
 studentCourse = st.radio("Select your programme:",courses[studentCourseType])
 studentLevel=year2level(studentYear,studentCourseType)
-
-savePlots=st.radio("Save plots locally?",["Yes","No"],index=1)
 
 colName=columns[studentCourseType][studentCourse]
 if studentCourse=="Show modules for all programmes":
@@ -435,9 +452,12 @@ if not showAllMods:
     st.pyplot(fig)
     if savePlots=="Yes":
         try:
-            fileOut=f'plots/workload_{shortCode}.png'
-            plt.savefig(fileOut)
-            st.info('Plot saved to',fileOut)
+            fileOutPng=f'plots/png/workload_{shortCode}.png'
+            fileOutPdf=f'plots/pdf/workload_{shortCode}.pdf'
+            plt.savefig(fileOutPng)
+            plt.savefig(fileOutPdf)
+            st.info('Plot saved to',fileOutPng)
+            st.info('Plot saved to',fileOutPdf)
         except:
             st.info('Unable to save plot')
 
@@ -503,6 +523,7 @@ assessSeen={"Autumn":set(),"Spring":set()}
 handles={}
 labels={}
 for s,sem in enumerate(semesters):
+    extra_artists=[]
     axG=axesG[s]
     yticks=[]
     ylabels=[]
@@ -535,7 +556,8 @@ for s,sem in enumerate(semesters):
                         edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
             yticks.append(yass)
             ylabels.append(aName)
-        axG.text(-2,m,mod,ha="center",va="center",rotation="vertical",fontsize=10)
+        modtxt=axG.text(-2,m,mod,ha="center",va="center",rotation="vertical",fontsize=10)
+        extra_artists.append(modtxt)
     # st.write('types',assessTypes,'colors',assessColours)
     # axG.set_yticks(np.arange(len(mods)))
     # axG.set_yticklabels(mods)
@@ -589,19 +611,23 @@ for s,sem in enumerate(semesters):
         lab=weight2sizecolorlabel(wt)["lab"]
         legendMarkers.append(axG.scatter(0.5,0.5,s=size,
                             label=lab,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
-    axesG[s].legend(loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
+    legend=axesG[s].legend(loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
     for l,lm in enumerate(legendMarkers):
         lm.remove()
-
-    axesG[s].set_position([0,0,0.8,figh[sem]/(figh[sem]+1)])
+    extra_artists.append(legend)
+    axesG[s].set_position([0.2,0.2,0.8,figh[sem]/(figh[sem]+1)])
     st.pyplot(figG[s])
     if savePlots=="Yes":
         try:
-            fileOut=f'plots/deadlines_{shortCode}_{sem}.png'
-            figG[s].savefig(fileOut)
-            st.write('Plot saved to',fileOut)
+            fileOutPng=f'plots/png/deadlines_{shortCode}_{sem}.png'
+            fileOutPdf=f'plots/pdf/deadlines_{shortCode}_{sem}.pdf'
+            figG[s].savefig(fileOutPng,bbox_inches="tight")
+            figG[s].savefig(fileOutPdf,bbox_inches="tight")
+            st.write('Plot saved to',fileOutPng)
+            st.write('Plot saved to',fileOutPdf)
         except:
             st.info('Unable to save plot')
+    
             
 # # Old method for legends
 # unique_handles = []
