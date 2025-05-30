@@ -8,6 +8,7 @@ import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import streamlit as st
 import os
+from datetime import datetime, timedelta
 
 def streamlit_cloud():
     """
@@ -35,7 +36,8 @@ def year2level(year,yrtype="UG"):
 
 # Set student properties
 academicYears=["2024/5","2025/6","2026/7 (TBC)"]
-easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":9}
+easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":7}
+startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (TBC)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
 filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (TBC)":"AssessmentSchedule_2627.xlsx"}
 coursetypes=["UG","PG"]
 courses={"UG":["Show modules for all programmes","Physics","Astrophysics","Physics with Astronomy","Medical Physics"],
@@ -258,6 +260,8 @@ inCore=AssessDates["Module Code"].isin(coreModList)
 AssessDates.loc[inCore,"Core"]=True
 ContactTime=ContactTimeIn[ContactTimeIn["Module Code"].isin(selModList)]
 
+hasDays="Day of Week" in AssessDates.columns
+
 AutumnWeeks=[]
 SpringWeeks=[]
 for a in AssessDates:
@@ -298,6 +302,10 @@ for a,assess in AssessDates.iterrows():
     assCore=assess["Core"]
     assessType=assess["CA type"]
     assessName=assess["Description"]
+    try:
+        assessDay=assess["Day of Week"]
+    except:
+        assessDay=""
     for wA in range(len(AutumnWeeks)):
         weekA=AutumnWeeks[wA]
         assessTime = assess[weekA] * modCredits*4
@@ -315,7 +323,7 @@ for a,assess in AssessDates.iterrows():
                 dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Autumn"][mod]["grid"]:
-                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"weeks":[],"weights":[]}
+                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
                 dlGrid["Autumn"][mod]["grid"][a]["weeks"].append(wA+1)
             if assSum=="Y":
                 dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
@@ -340,7 +348,7 @@ for a,assess in AssessDates.iterrows():
                 dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Autumn"][mod]["grid"]:
-                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"weeks":[],"weights":[]}
+                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
                 dlGrid["Autumn"][mod]["grid"][a]["weeks"].append(wA+1)
             if assSum=="Y":
                 dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
@@ -364,7 +372,7 @@ for a,assess in AssessDates.iterrows():
                 dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Spring"][mod]["grid"]:
-                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"weeks":[],"weights":[]}
+                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
                 dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
             if assSum=="Y":
                 dlGrid["Spring"][mod]["grid"][a]["weights"].append(assess[weekS])
@@ -390,7 +398,7 @@ for a,assess in AssessDates.iterrows():
                 dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Spring"][mod]["grid"]:
-                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"weeks":[],"weights":[]}
+                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
                 dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
             if assSum=="Y":
                 dlGrid["Spring"][mod]["grid"][a]["weights"].append(assess[weekS])
@@ -577,6 +585,9 @@ for s,sem in enumerate(semesters):
             # st.write(m,mod,nassess,a,dlGrid[sem][mod]["grid"][an]["type"],yass[0],len(dlGrid[sem][mod]["grid"][an]["weeks"]))
             axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),
                         edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
+            if hasDays:
+                for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
+                    axG.text(week+0.15,yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",fontsize=8)
             yticks.append(yass)
             ylabels.append(aName)
         if coreMod:
@@ -590,8 +601,18 @@ for s,sem in enumerate(semesters):
     axG.set_yticks(yticks)
     axG.set_yticklabels(ylabels,fontsize=8)
     axG.set_ylim(-0.5,len(mods)-0.5)
-    axG.set_xlabel(f"{sem} Semester Week")
+    axG.set_xlabel(f"{sem} Semester Week ({academicYear})")
     axG.set_xticks(np.arange(13))
+    startDate=startDates[academicYear][sem]
+    xticklabels=[]
+    axG.set_xticks(np.arange(13))
+    for w in range(13):
+        if (sem=="Autumn" and w<=11) or sem=="Spring" and w-1<easterWeeks[academicYear]:
+            wkbeg=startDate+timedelta(weeks=w-1)
+        else:
+            wkbeg=startDate+timedelta(weeks=w-1+3)
+        xticklabels.append(f'{w}\n'+wkbeg.strftime("%d/%m"))
+    axG.set_xticklabels(xticklabels)
     axG.set_xlim(0.5,12.5)
     # axG.legend(loc="upper left")
     # st.write(type(axG))
@@ -607,7 +628,7 @@ for s,sem in enumerate(semesters):
 
     axG.invert_yaxis()
     axG.tick_params(axis="both",length=0)
-    axG.set_title(f"{title}\n{sem} Semester")
+    axG.set_title(f"{title}\n{sem} Semester {academicYear}")
     
     # Create grid lines
     axGx=axG.twiny()
@@ -638,6 +659,10 @@ for s,sem in enumerate(semesters):
         legendMarkers.append(axG.scatter(0.5,0.5,s=size,
                             label=lab,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
     legend=axesG[s].legend(loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
+    
+    #Add deadline date key
+    if hasDays:
+        axesG[s].text(12.6,len(mods)-0.5,"Deadlines:\nMo/Tu/We/Th/Fr\n\n(*)=In-session",va="bottom")
     for l,lm in enumerate(legendMarkers):
         lm.remove()
     extra_artists.append(legend)
