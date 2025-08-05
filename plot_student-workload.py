@@ -35,7 +35,14 @@ def year2level(year,yrtype="UG"):
         return year+3
 
 # Set student properties
-academicYears=["2024/5","2025/6","2026/7 (TBC)"]
+if streamlit_cloud():
+    st.info('Running on streamlit cloud.')
+    academicYears=["2025/6"]
+else:
+    st.info('Running locally')
+    academicYears=["2025/6","2026/7 (TBC)"]
+    # academicYears=["2025/6"]
+
 easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":7}
 startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (TBC)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
 filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (TBC)":"AssessmentSchedule_2627.xlsx"}
@@ -51,13 +58,10 @@ columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronom
                "Compound Semiconductor Physics":"MScCSPhysics","CDT Compound Semiconductor Physics":"CDTCSPhysics",
                "Show modules for all programmes":"AllPG"}}
 
-if streamlit_cloud():
-    st.info('Running on streamlit cloud.')
-else:
-    st.info('Running locally')
+
 
 st.header("Select your year and course")
-academicYear = st.radio("Select the academic year:",academicYears,index=1)
+academicYear = st.radio("Select the academic year:",academicYears,index=0)
 studentCourseType = st.radio("Select your programme type:",coursetypes)
 if studentCourseType=="UG":
     studentYear = st.radio("Select your year of study:",years)
@@ -532,20 +536,20 @@ for s,sem in enumerate(semesters):
 
 def weight2sizecolorlabel(w):
     if w<-0.1:
-        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"Old deadline"}
+        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey'}
     elif w<0:
-        return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"Old deadline"}
+        return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey'}
     elif w==0:
-        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative"}
+        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'black'}
     elif w<=0.05:
-        return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%"}
+        return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%",'textcol':'black'}
     elif w<=0.1:
-        return {'ms':30,'ec':'green','lw':0,'fc':'green','lab':"5-10%"}
+        return {'ms':30,'ec':'green','lw':0,'fc':'green','lab':"5-10%",'textcol':'black'}
     elif w<=0.3:
-        return {'ms':80,'ec':'red','lw':1,'fc':'white','lab':"10-30%"}
+        return {'ms':80,'ec':'red','lw':1,'fc':'white','lab':"10-30%",'textcol':'black'}
     else:
-        return {'ms':100,'ec':'red','lw':0,'fc':'red','lab':">30%"}
-
+        return {'ms':100,'ec':'red','lw':0,'fc':'red','lab':">30%",'textcol':'black'}
+    
 assessSeen={"Autumn":set(),"Spring":set()}
 handles={}
 labels={}
@@ -576,18 +580,20 @@ for s,sem in enumerate(semesters):
             facecolors=[]
             linewidths=[]
             labs=[]
+            textcols=[]
             for w,wt in enumerate(weights):
                 sizes.append(weight2sizecolorlabel(wt)["ms"])
                 edgecolors.append(weight2sizecolorlabel(wt)["ec"])
                 facecolors.append(weight2sizecolorlabel(wt)["fc"])
                 linewidths.append(weight2sizecolorlabel(wt)["lw"])
                 labs.append(weight2sizecolorlabel(wt)["lab"])
+                textcols.append(weight2sizecolorlabel(wt)["textcol"])
             # st.write(m,mod,nassess,a,dlGrid[sem][mod]["grid"][an]["type"],yass[0],len(dlGrid[sem][mod]["grid"][an]["weeks"]))
             axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),
                         edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
             if hasDays:
                 for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
-                    axG.text(week+0.15,yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",fontsize=8)
+                    axG.text(week+0.15,yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",fontsize=8,color=textcols[w])
             yticks.append(yass)
             ylabels.append(aName)
         if coreMod:
@@ -656,13 +662,17 @@ for s,sem in enumerate(semesters):
         facecolor=weight2sizecolorlabel(wt)["fc"]
         linewidth=weight2sizecolorlabel(wt)["lw"]
         lab=weight2sizecolorlabel(wt)["lab"]
+        textcol=weight2sizecolorlabel(wt)["textcol"]
         legendMarkers.append(axG.scatter(0.5,0.5,s=size,
                             label=lab,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
     legend=axesG[s].legend(loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
     
+    for t,text in enumerate(legend.get_texts()):
+        text.set_color(weight2sizecolorlabel(legendWeights[t])["textcol"])
+
     #Add deadline date key
     if hasDays:
-        axesG[s].text(12.6,len(mods)-0.5,"Deadlines:\nMo/Tu/We/Th/Fr\n\n(*)=In-session",va="bottom")
+        axesG[s].text(12.6,len(mods)-0.5,"Deadlines:\nMo/Tu/We/Th/Fr\n\n(*)=In-session\n(P)=Portfolio\n(U/D)=Updated",va="bottom")
     for l,lm in enumerate(legendMarkers):
         lm.remove()
     extra_artists.append(legend)
