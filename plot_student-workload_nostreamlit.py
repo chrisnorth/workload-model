@@ -1,0 +1,715 @@
+import numpy as np
+import pandas as pd
+import matplotlib as mpl
+from matplotlib import pyplot as plt
+plt.ion()
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
+import streamlit as st
+import os
+from datetime import datetime, timedelta
+
+def streamlit_cloud():
+    """
+    Checks if the Streamlit app is currently running on Streamlit Community Cloud.
+    """
+    # Streamlit Cloud sets the 'STREAMLIT_SERVER_PORT' environment variable
+    # to a specific port (e.g., 8501).
+    # When running locally, this variable might not be set or might be set differently.
+    # Also, Streamlit Cloud often sets an environment variable like 'streamlit_cloud_config'.
+    # st.write("HOSTNAME",os.environ.get("HOSTNAME"))
+    # st.write("DEBUG os.environ",os.environ)
+    return os.environ.get("HOSTNAME")=="streamlit"
+
+
+# st.write('matplotlib',mpl.__version__)
+# st.write('numpy',np.__version__)
+# st.write('pandas',pd.__version__)
+# st.write('streamlit',st.__version__)
+
+def year2level(year,yrtype="UG"):
+    if yrtype=="PG":
+        return 7
+    else:
+        return year+3
+
+# Set student properties
+if streamlit_cloud():
+    st.info('Running on streamlit cloud.')
+    academicYears=["2025/6"]
+else:
+    st.info('Running locally')
+    academicYears=["2025/6","2026/7 (TBC)"]
+    # academicYears=["2025/6"]
+
+easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":7}
+startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (TBC)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
+filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (TBC)":"AssessmentSchedule_2627.xlsx"}
+coursetypes=["UG","PG"]
+courses={"UG":["Show modules for all programmes","Physics","Astrophysics","Physics with Astronomy","Medical Physics"],
+         "PG":["Show modules for all programmes","Physics", "Astrophysics", "Data Intensive Physics", "Data Intensive Astrophysics","Compound Semiconductor Physics","CDT Compound Semiconductor Physics"]}
+years=[1,2,3,4]
+
+columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronomy":"PhysAstro","Medical Physics":"MedPhys","Show modules for all programmes":"AllUG"},
+         "PG":{"Physics":"MScPhysics", "Astrophysics":"MScAstro",
+               "Data Intensive Physics":"MScDataPhys",
+               "Data Intensive Astrophysics":"MScDataAstro",
+               "Compound Semiconductor Physics":"MScCSPhysics","CDT Compound Semiconductor Physics":"CDTCSPhysics",
+               "Show modules for all programmes":"AllPG"}}
+
+
+
+st.header("Select your year and course")
+academicYear = "2025/6"
+studentCourseType = "UG"
+if studentCourseType=="UG":
+    studentYear = 1
+else:
+    studentYear=1
+studentCourse = "Physics"
+studentLevel=year2level(studentYear,studentCourseType)
+
+if studentYear==4 and studentCourse=="Medical Physics":
+    st.warning("ERROR: No Year 4 for Medical Physics")
+    st.stop()
+
+colName=columns[studentCourseType][studentCourse]
+if studentCourse=="Show modules for all programmes":
+    showAllProgs=True
+    st.write(f"**Showing All modules for {studentCourseType} student in Year {studentYear} (Level {studentLevel}) of study**")
+    shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_All'
+    if streamlit_cloud():
+        savePlots="No"
+    else:
+        savePlots=st.radio("Save plots locally?",["Yes","No"],index=1)
+else:
+    showAllProgs=False
+    st.write(f"**You are a {studentCourseType} {studentCourse} student in Year {studentYear} (Level {studentLevel}) of study**")
+    shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_{studentCourse}'
+    savePlots="No"
+
+# st.info(f"column {colName}")
+# st.stop()
+# Set core modules
+fileIn=filenames[academicYear]
+Modules=pd.read_excel(fileIn,"Modules")
+try:
+    if showAllProgs:
+        coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+    else:
+        coreMods=Modules[(Modules[colName]=="C")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+except:
+    st.error(f"ERROR reading data for {studentCourseType} {studentCourse} from {academicYear}")
+    st.stop()
+
+coreModList=coreMods["Module Code"].to_list()
+selModList=coreModList
+
+coreCredits=coreMods["Credits"].sum()
+coreCreditsAutumn=coreMods[coreMods["Semester"]=="SEM1"]["Credits"].sum()+coreMods[coreMods["Semester"]=="SEMD"]["Credits"].sum()/2
+coreCreditsSpring=coreMods[coreMods["Semester"]=="SEM2"]["Credits"].sum()+coreMods[coreMods["Semester"]=="SEMD"]["Credits"].sum()/2
+
+nExamsAutumnCore=len(coreMods[(coreMods["Semester"]=="SEM1")&(coreMods["Exam Weight (%)"]>0)])
+nExamsSpringCore=len(coreMods[(coreMods["Semester"]=="SEM2")&(coreMods["Exam Weight (%)"]>0)])
+
+optCreditsAvail=120-coreCredits
+optMods=Modules[(Modules[colName]=="O")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        
+st.divider()
+st.header("Module Selection")
+    # st.subheader("Select Optional Modules")
+if showAllProgs:
+    st.write("Available modules are:",coreMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+    st.write("Selecting all modules for all programmes")
+    showAllMods=True
+    optModSelCode=[]
+elif coreCredits==120:
+    st.write("Your core modules are:",coreMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+    st.write("You have no optional selections to make.")
+    showAllMods=False
+    optModSelCode=[]
+    # optCreditSel=optMods[optMods["Module Code"].isin(optModSelCode)]["Credits"].sum()
+else:
+    st.subheader("Optional module selection")
+    st.write("Remaining optional credits:",optCreditsAvail)
+    st.write("Please consult SIMS for any further conditions of module selection.")
+    # st.write("Optional modules",optMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+    
+    optMods=Modules[(Modules[colName]=="O")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+    
+    showAllMods=st.checkbox("Select all available modules?")
+    if showAllMods:
+        st.write("**Warning: workload calculations are not possible when selecting all modules.**")
+
+    # Select Autumn modules
+    optModListSEM1=optMods[optMods["Semester"]=="SEM1"]["Module Code"].to_list()
+    st.write("Core module credits (Autumn):", int(coreCreditsAutumn))
+    if len(optModListSEM1)>0:
+        st.write("Optional modules (Autumn Semester)",optMods[optMods["Semester"]=="SEM1"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+        if showAllMods:
+            optModSelCodeSEM1=optModListSEM1
+            st.write("*Selecting all Autumn semester optional modules**")
+        else:
+            optModSelCodeSEM1=st.multiselect("Select your Autumn Semester optional modules:",optModListSEM1)
+    else:
+        st.write("You have no optional selections to make for Autumn semester")
+        optModSelCodeSEM1=[]
+    optCreditSelSEM1=optMods[optMods["Module Code"].isin(optModSelCodeSEM1)]["Credits"].sum()
+    autumnCredits=optCreditSelSEM1 + coreCreditsAutumn
+    nExamsAutumn=nExamsAutumnCore + len(optMods[(optMods["Module Code"].isin(optModSelCodeSEM1))&(optMods["Exam Weight (%)"]>0)])
+    st.write("Autumn semester credits:",int(autumnCredits))
+    st.write("Autumn semester exams:", nExamsAutumn)
+    
+
+    # Select Spring modules
+    optModListSEM2=optMods[optMods["Semester"]=="SEM2"]["Module Code"].to_list()
+    st.write("Core module credits (Spring):", int(coreCreditsSpring))
+    if len(optModListSEM2)>0:
+        st.write("Optional modules (Spring Semester)",optMods[optMods["Semester"]=="SEM2"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+        if showAllMods:
+            optModSelCodeSEM2=optModListSEM2
+            st.write("**Selecting all Spring semester optional modules**")
+        else:
+            optModSelCodeSEM2=st.multiselect("Select your Spring Semester optional modules:",optModListSEM2)
+    else:
+        optModSelCodeSEM2=[]
+
+    optCreditSelSEM2=optMods[optMods["Module Code"].isin(optModSelCodeSEM2)]["Credits"].sum()
+    springCredits=optCreditSelSEM2 + coreCreditsSpring
+    nExamsSpring=nExamsSpringCore + len(optMods[(optMods["Module Code"].isin(optModSelCodeSEM2))&(optMods["Exam Weight (%)"]>0)])
+    st.write("Spring semester credits:",int(springCredits))
+    st.write("Spring semester exams:", nExamsSpring)
+    optModSelCode = optModSelCodeSEM1 + optModSelCodeSEM2
+optModSel=optMods[optMods["Module Code"].isin(optModSelCode)]        
+optCreditSel=optMods[optMods["Module Code"].isin(optModSelCode)]["Credits"].sum()
+selModList=optModSelCode + coreModList
+
+selMod=Modules[Modules["Module Code"].isin(selModList)].rename(columns={colName:"Core/Optional"})
+autumnCredits=int(selMod[selMod["Semester"]=="SEM1"]["Credits"].sum()+selMod[selMod["Semester"]=="SEMD"]["Credits"].sum()/2)
+springCredits=int(selMod[selMod["Semester"]=="SEM2"]["Credits"].sum()+selMod[selMod["Semester"]=="SEMD"]["Credits"].sum()/2)
+selCredits=autumnCredits + springCredits
+
+if not showAllMods:
+    if optCreditSel<optCreditsAvail:
+        st.write(f"Please select {optCreditsAvail-optCreditSel} more credits.")
+    elif optCreditSel>optCreditsAvail:
+        st.write(f"⚠️ ERROR: You can only select {optCreditsAvail} credits. {optCreditSel} selected")
+        st.stop()
+    else:
+        st.write("👍 All credits selected.")
+        if autumnCredits>70 or springCredits>70:
+            st.error("⚠️ WARNING: Module choice is unbalanced between semesters")
+    
+
+
+# st.divider()
+# st.subheader("Selected Modules:")
+# st.write(selMod[["Module Code","Module Title","Semester","Credits","Core/Optional","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+
+# st.write("Show All Mods",showAllMods)
+st.divider()
+
+if not showAllMods:
+    st.header("Estimated Workload")
+    st.write("The calculations below are all approximate, and based only on contact time and workload linked to summative assessments.")
+    st.write("It assumes that all sessions with contact time are attended, and assessment workload is based on estimates.")
+    if selCredits!=120:
+        st.write(f"⚠️ WARNING: Module choice is only based on {selCredits} credits.")
+    profiles=["Delta","Dist","Linear"]
+    profilesDesc=["Work just before the deadline","Distribute the work evenly over the full period","Gradually increase work up to the deadline"]
+    profileName=st.radio("How would you like to work?",profilesDesc)
+    for p,prof in enumerate(profilesDesc):
+        if profileName==prof:
+            profileSel=profiles[p]
+else:
+    profileSel="Delta"
+
+
+AssessDatesIn=pd.read_excel(fileIn,"Assessments")
+AssessDatesIn.fillna(0)   
+
+ContactTimeIn=pd.read_excel(fileIn,"ContactTime")
+ContactTimeIn.fillna(0)
+    
+moduleList=Modules["Module Code"].values
+### Add MSc modules to AssessDates 
+# Step 1: Filter MSc-derived modules
+msc_modules = Modules[(Modules["Source"] == "P") & (Modules["Alternative Module Code"].notna())]
+
+# Step 2: Create duplicated assessment rows for each MSc module
+msc_assessments = pd.DataFrame()
+
+for _, row in msc_modules.iterrows():
+    original_code = row["Alternative Module Code"]
+    msc_code = row["Module Code"]
+
+    # Find all assessment entries for the original module
+    original_assessments = AssessDatesIn[AssessDatesIn["Module Code"] == original_code].copy()
+
+    if not original_assessments.empty:
+        # Replace Module Code with MSc Module Code
+        original_assessments["Module Code"] = msc_code
+        msc_assessments = pd.concat([msc_assessments, original_assessments], ignore_index=True)
+
+# Step 3: Append the MSc assessments to the original table
+AssessDatesAll = pd.concat([AssessDatesIn, msc_assessments], ignore_index=True)
+# AssessDates.to_excel("assessments_with_msc_duplicates.xlsx", index=False)
+
+# Reduce to list of selected modules
+AssessDates=AssessDatesAll[AssessDatesAll["Module Code"].isin(selModList)]
+inCore=AssessDates["Module Code"].isin(coreModList)
+AssessDates.loc[inCore,"Core"]=True
+ContactTime=ContactTimeIn[ContactTimeIn["Module Code"].isin(selModList)]
+
+hasDays="Day of Week" in AssessDates.columns
+
+AutumnWeeks=[]
+SpringWeeks=[]
+for a in AssessDates:
+    if a.find('Autumn Week')>=0:
+        AutumnWeeks.append(a)
+    if a.find('Spring Week')>=0:
+        SpringWeeks.append(a)
+
+def l2y(level,yrtype="UG"):
+    if yrtype=="PG":
+        years={7:"Y1"}
+    else:
+        years={4:"Y1",5:"Y2",6:"Y3",7:"Y4"}
+    assert(level in years)
+    return(years[level])
+
+profileAssess={"Autumn":np.zeros(len(AutumnWeeks)),"Spring":np.zeros(len(SpringWeeks))}
+profileAssessCore={"Autumn":np.zeros(len(AutumnWeeks)),"Spring":np.zeros(len(SpringWeeks))}
+profileContact={"Autumn":np.zeros(len(AutumnWeeks)),"Spring":np.zeros(len(SpringWeeks))}
+nDeadlines={"Autumn":np.zeros(len(AutumnWeeks),dtype=int),"Spring":np.zeros(len(SpringWeeks),dtype=int)}
+nDeadlinesBig={"Autumn":np.zeros(len(AutumnWeeks),dtype=int),"Spring":np.zeros(len(SpringWeeks),dtype=int)}
+dlGrid={"Autumn":{},"Spring":{}}
+hasOldDeadline=False
+
+for wA,weekA in enumerate(AutumnWeeks):
+    conTime=ContactTime[weekA].sum()
+    if conTime>0:
+        profileContact["Autumn"][wA] = profileContact["Autumn"][wA] + conTime
+for wS,weekS in enumerate(SpringWeeks):
+    conTime=ContactTime[weekS].sum()
+    if conTime>0:
+        profileContact["Spring"][wS] = profileContact["Spring"][wS] + conTime
+
+for a,assess in AssessDates.iterrows():
+    mod = assess["Module Code"]
+    modCredits = Modules["Credits"][Modules["Module Code"]==mod].values[0]
+    assSum=assess["Summative"]
+    assCore=assess["Core"]
+    assessType=assess["CA type"]
+    assessName=assess["Description"]
+    try:
+        assessDay=assess["Day of Week"]
+    except:
+        assessDay=""
+    for wA in range(len(AutumnWeeks)):
+        weekA=AutumnWeeks[wA]
+        assessTime = assess[weekA] * modCredits*4
+        if assessTime>0:
+            if np.isfinite(assess["Hours"]):
+                assessTime = assess["Hours"]
+            assessWeeks = assess["Duration"]
+            wR=np.arange(wA-assessWeeks,wA,dtype=int)+1
+            wX0=np.min(wR)
+            if assSum=="Y":
+                nDeadlines["Autumn"][wA] = nDeadlines["Autumn"][wA] + 1
+                if assessTime>=1:
+                    nDeadlinesBig["Autumn"][wA] = nDeadlinesBig["Autumn"][wA] + 1
+            if not mod in dlGrid["Autumn"]:
+                dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            if assSum=="Y" or assSum=="N":
+                if not a in dlGrid["Autumn"][mod]["grid"]:
+                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
+                dlGrid["Autumn"][mod]["grid"][a]["weeks"].append(wA+1)
+            if assSum=="Y":
+                dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
+            elif assSum=="N":
+                dlGrid["Autumn"][mod]["grid"][a]["weights"].append(0)
+            if profileSel=="Delta":
+                profileAssess["Autumn"][wA] = profileAssess["Autumn"][wA] + assessTime
+                if assCore:
+                    profileAssessCore["Autumn"][wA] = profileAssessCore["Autumn"][wA] + assessTime
+            elif profileSel=="Dist":
+                for wX in wR:
+                    profileAssess["Autumn"][wX] = profileAssess["Autumn"][wX] + assessTime/assessWeeks
+                    if assCore:
+                        profileAssessCore["Autumn"][wX] = profileAssessCore["Autumn"][wX] + assessTime/assessWeeks
+            elif profileSel=="Linear":       
+                for wX in wR:
+                    profileAssess["Autumn"][wX] = profileAssess["Autumn"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
+                    if assCore:
+                        profileAssessCore["Autumn"][wX] = profileAssessCore["Autumn"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
+        elif assessTime<0:
+            if not mod in dlGrid["Autumn"]:
+                dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            if assSum=="Y" or assSum=="N":
+                if not a in dlGrid["Autumn"][mod]["grid"]:
+                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
+                dlGrid["Autumn"][mod]["grid"][a]["weeks"].append(wA+1)
+            if assSum=="Y":
+                dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
+            elif assSum=="N":
+                dlGrid["Autumn"][mod]["grid"][a]["weights"].append(0)
+    for wS in range(len(SpringWeeks)):
+        weekS=SpringWeeks[wS]
+        # if AssessDates.loc[a,"Hours"]
+        assessTime = assess[weekS] * modCredits*4
+        if assessTime>0:
+            if np.isfinite(assess["Hours"]):
+                assessTime = assess["Hours"]
+            assessWeeks = assess["Duration"]
+            wR=np.arange(wS-assessWeeks,wS,dtype=int)+1
+            wX0=np.min(wR)
+            if assSum=="Y":
+                nDeadlines["Spring"][wS] = nDeadlines["Spring"][wS] + 1
+                if assessTime>=1:
+                    nDeadlinesBig["Spring"][wS] = nDeadlinesBig["Spring"][wS] + 1
+            if not mod in dlGrid["Spring"]:
+                dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            if assSum=="Y" or assSum=="N":
+                if not a in dlGrid["Spring"][mod]["grid"]:
+                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
+                dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
+            if assSum=="Y":
+                dlGrid["Spring"][mod]["grid"][a]["weights"].append(assess[weekS])
+            elif assSum=="N":
+                dlGrid["Spring"][mod]["grid"][a]["weights"].append(0)
+            if profileSel=="Delta":
+                profileAssess["Spring"][wS] = profileAssess["Spring"][wS] + assessTime
+                if assCore:
+                    profileAssessCore["Spring"][wS] = profileAssessCore["Spring"][wS] + assessTime
+            elif profileSel=="Dist":
+                for wX in wR:
+                    profileAssess["Spring"][wX] = profileAssess["Spring"][wX] + assessTime/assessWeeks
+                    if assCore:
+                        profileAssessCore["Spring"][wX] = profileAssessCore["Spring"][wX] + assessTime/assessWeeks
+            elif profileSel=="Linear":       
+                for wX in wR:
+                    profileAssess["Spring"][wX] = profileAssess["Spring"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
+                    if assCore:
+                        profileAssessCore["Spring"][wX] = profileAssessCore["Spring"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
+        elif assessTime<0:
+            hasOldDeadline=True
+            if not mod in dlGrid["Spring"]:
+                dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            if assSum=="Y" or assSum=="N":
+                if not a in dlGrid["Spring"][mod]["grid"]:
+                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
+                dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
+            if assSum=="Y":
+                dlGrid["Spring"][mod]["grid"][a]["weights"].append(assess[weekS])
+            elif assSum=="N":
+                dlGrid["Spring"][mod]["grid"][a]["weights"].append(0)
+
+# st.stop()
+
+semesters=["Autumn","Spring"]
+
+if not showAllMods:
+    # fig=plt.figure(figsize=(12,9),num=1)
+    fig,axes=plt.subplots(2,2,figsize=(8,8))
+    x_values=np.arange(0.5,13)
+    x_ticks=np.arange(1,13)
+    maxD=np.max([np.max(nDeadlines["Autumn"]),np.max(nDeadlines["Spring"])])+1
+    y_ticksN=np.arange(0,maxD+1,1,dtype=int)
+    
+    for s,sem in enumerate(semesters):
+        dataContact=profileContact[sem]
+        y_Contact=np.concatenate([[dataContact[0]],dataContact])
+        dataAssess=profileAssess[sem]
+        y_Assess=np.concatenate([[dataAssess[0]],dataAssess])
+        dataAssessCore=profileAssessCore[sem]
+        y_AssessCore=np.concatenate([[dataAssessCore[0]],dataAssessCore])
+
+        ax=axes[0,s]
+        ax.plot(x_values,y_Assess+y_Contact,"b",drawstyle="steps-pre",label="Total Workload")
+        ax.fill_between(x_values,y_Assess+y_Contact,color="b",alpha=0.3,step="pre")
+        # ax.plot(x_values,y_AssessCore+y_Contact,"r",drawstyle="steps-pre",label="Core Workload")
+        ax.plot(x_values,y_Contact,"k",linestyle=":",drawstyle="steps-pre",label="Contact Time")
+        
+
+        # y_text=dataAssess + dataContact + 1
+        # for t in range(len(nDeadlines[sem])):
+        #     ax.annotate(nDeadlines[sem][t],(t+1,y_text[t]),ha="center")
+        ax.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
+        ax.set_xticks(x_ticks)
+        ax.set_ylim(0,50)
+        ax.set_xlim(0.5,12.5)
+        # ax.set_xlabel(f"{sem} Semester Week")
+        ax.set_ylabel("Workload (Hours)")
+        if s==0:
+            ax.legend(loc="upper left")
+            ax.axvline(11.5,color="gray",lw=6,alpha=0.5)
+            ax.annotate("Vacation",(11.75,ax.get_ylim()[1]),rotation="vertical",va="top")
+        if s==1:
+            eW=easterWeeks[academicYear]+0.5
+            ax.axvline(eW,color="gray",lw=6,alpha=0.5)
+            ax.annotate("Vacation",(eW+0.25,ax.get_ylim()[1]),rotation="vertical",va="top")
+                        
+        dataNDeadlines=nDeadlines[sem]
+        y_NDeadlines=np.concatenate([[dataNDeadlines[0]],dataNDeadlines])
+        dataNDeadlinesBig=nDeadlinesBig[sem]
+        y_NDeadlinesBig=np.concatenate([[dataNDeadlinesBig[0]],dataNDeadlinesBig])
+        axN=axes[1,s]
+        axN.plot(x_values,y_NDeadlines,"g",drawstyle="steps-pre",label="All Deadlines")
+        axN.fill_between(x_values,y_NDeadlines,color="g",alpha=0.3,step="pre")
+        axN.plot(x_values,y_NDeadlinesBig,"r",drawstyle="steps-pre",label="Deadlines (1 Hour+)")
+        axN.fill_between(x_values,y_NDeadlinesBig,color="r",alpha=0.3,step="pre")
+        axN.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
+        axN.set_xticks(x_ticks)
+        axN.set_xlim(0.5,12.5)
+        axN.set_ylim(0,maxD)
+        axN.set_yticks(y_ticksN)
+        axN.set_xlabel(f"{sem} Semester Week")
+        axN.set_ylabel("# Deadlines")
+        if s==0:
+            axN.legend(loc="upper left")
+            axN.axvline(11.5,color="gray",lw=6,alpha=0.5)
+            axN.annotate("Vacation",(11.75,axN.get_ylim()[1]),rotation="vertical",va="top")
+        if s==1:
+            eW=easterWeeks[academicYear]+0.5
+            axN.axvline(eW,color="gray",lw=6,alpha=0.5)
+            axN.annotate("Vacation",(eW+0.25,axN.get_ylim()[1]),rotation="vertical",va="top")
+
+    plt.tight_layout(rect=[0, 0, 1, 0.9])
+    st.pyplot(fig)
+    if savePlots=="Yes":
+        try:
+            fileOutPng=f'plots/png/workload_{shortCode}.png'
+            fileOutPdf=f'plots/pdf/workload_{shortCode}.pdf'
+            plt.savefig(fileOutPng)
+            plt.savefig(fileOutPdf)
+            st.info('Plot saved to',fileOutPng)
+            st.info('Plot saved to',fileOutPdf)
+        except:
+            st.info('Unable to save plot')
+
+# st.write(dlGrid)
+st.divider()
+st.header("Deadline Grids")
+if showAllProgs:
+    title=f"All Deadlines for {studentCourseType} student in Year {studentYear} (all modules)"
+elif showAllMods:
+    title=f"All Deadlines for {studentCourseType} {studentCourse} student in Year {studentYear} (all modules)"
+else:
+    title=f"Deadlines for {studentCourseType} {studentCourse} student in Year {studentYear}"
+
+nMods=len(selMod)
+if nMods>20:
+    figh=20
+if nMods>10:
+    figh=15
+else:
+    figh=8
+
+figh={"Autumn":len(dlGrid["Autumn"].keys()),"Spring":len(dlGrid["Spring"].keys())}
+# figG,axesG=plt.subplots(2,1,figsize=(8,figh))
+figG=[]
+axesG=[]
+figGA=plt.figure(figsize=(8,figh["Autumn"]),edgecolor='k',frameon=True)
+figG.append(figGA)
+axesG.append(plt.gca())
+figGS=plt.figure(figsize=(8,figh["Spring"]))
+figG.append(figGS)
+axesG.append(plt.gca())
+
+assessColours=[]
+assessTypes=set()
+available_colors = ['red', 'blue', 'green', 'purple', 'orange', 'cyan', 'magenta', 'yellow', 'black']
+col_idx=0
+for s,sem in enumerate(semesters):
+    for m,mod in enumerate(dlGrid[sem].keys()):
+        for a,an in enumerate(dlGrid[sem][mod]["grid"].keys()):
+            aType=dlGrid[sem][mod]["grid"][an]["type"]
+            if aType not in assessTypes:
+                assessTypes.add(aType)
+                assessColours.append(available_colors[col_idx % len(available_colors)])
+                col_idx +=1
+
+def weight2sizecolorlabel(w):
+    if w<-0.1:
+        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey'}
+    elif w<0:
+        return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey'}
+    elif w==0:
+        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'black'}
+    elif w<=0.05:
+        return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%",'textcol':'black'}
+    elif w<=0.1:
+        return {'ms':30,'ec':'green','lw':0,'fc':'green','lab':"5-10%",'textcol':'black'}
+    elif w<=0.3:
+        return {'ms':80,'ec':'red','lw':1,'fc':'white','lab':"10-30%",'textcol':'black'}
+    else:
+        return {'ms':100,'ec':'red','lw':0,'fc':'red','lab':">30%",'textcol':'black'}
+    
+assessSeen={"Autumn":set(),"Spring":set()}
+handles={}
+labels={}
+for s,sem in enumerate(semesters):
+    extra_artists=[]
+    axG=axesG[s]
+    yticks=[]
+    ylabels=[]
+    mods=list(dlGrid[sem].keys())
+    mods.sort(key=lambda x:dlGrid[sem][x]["semester"])
+    for m,mod in enumerate(mods):
+        nassess=len(dlGrid[sem][mod]["grid"])
+        coreMod= mod in coreModsAll
+        if coreMod:
+            coreRect=mpatches.Rectangle((0.5,m-0.5),12,1,facecolor='lightgray',alpha=0.5)
+            axG.add_patch(coreRect)
+        for a,an in enumerate(dlGrid[sem][mod]["grid"].keys()):
+            aType=dlGrid[sem][mod]["grid"][an]["type"]
+            aName=dlGrid[sem][mod]["grid"][an]["name"]
+            if type(aName)==float:
+                aName="CA"
+            color=assessColours[list(assessTypes).index(aType)]
+            yass=m-0.5+(a+1)/(nassess+1)
+            yplot=[yass]*len(dlGrid[sem][mod]["grid"][an]["weeks"])
+            weights=dlGrid[sem][mod]["grid"][an]["weights"]
+            sizes=[]
+            edgecolors=[]
+            facecolors=[]
+            linewidths=[]
+            labs=[]
+            textcols=[]
+            for w,wt in enumerate(weights):
+                sizes.append(weight2sizecolorlabel(wt)["ms"])
+                edgecolors.append(weight2sizecolorlabel(wt)["ec"])
+                facecolors.append(weight2sizecolorlabel(wt)["fc"])
+                linewidths.append(weight2sizecolorlabel(wt)["lw"])
+                labs.append(weight2sizecolorlabel(wt)["lab"])
+                textcols.append(weight2sizecolorlabel(wt)["textcol"])
+            # st.write(m,mod,nassess,a,dlGrid[sem][mod]["grid"][an]["type"],yass[0],len(dlGrid[sem][mod]["grid"][an]["weeks"]))
+            axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),
+                        edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
+            if hasDays:
+                for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
+                    axG.text(week+0.15,yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",fontsize=8,color=textcols[w])
+            yticks.append(yass)
+            ylabels.append(aName)
+        if coreMod:
+            modtxt=axG.text(-2,m,f'{mod}\n(Core)',ha="center",va="center",rotation="vertical",fontsize=10)
+        else:
+            modtxt=axG.text(-2,m,f'{mod}\n(Optional)',ha="center",va="center",rotation="vertical",fontsize=10)
+        extra_artists.append(modtxt)
+    # st.write('types',assessTypes,'colors',assessColours)
+    # axG.set_yticks(np.arange(len(mods)))
+    # axG.set_yticklabels(mods)
+    axG.set_yticks(yticks)
+    axG.set_yticklabels(ylabels,fontsize=8)
+    axG.set_ylim(-0.5,len(mods)-0.5)
+    axG.set_xlabel(f"{sem} Semester Week ({academicYear})")
+    axG.set_xticks(np.arange(13))
+    startDate=startDates[academicYear][sem]
+    xticklabels=[]
+    axG.set_xticks(np.arange(13))
+    for w in range(13):
+        if (sem=="Autumn" and w<=11) or sem=="Spring" and w-1<easterWeeks[academicYear]:
+            wkbeg=startDate+timedelta(weeks=w-1)
+        else:
+            wkbeg=startDate+timedelta(weeks=w-1+3)
+        xticklabels.append(f'{w}\n'+wkbeg.strftime("%d/%m"))
+    axG.set_xticklabels(xticklabels)
+    axG.set_xlim(0.5,12.5)
+    # axG.legend(loc="upper left")
+    # st.write(type(axG))
+    handles[sem],labels[sem]=axG.get_legend_handles_labels()
+    
+    if s==0:
+        axG.axvline(11.5,color="gray",lw=6,alpha=0.5)
+        # axG.annotate("Vacation",(11.625,axG.get_ylim()[0]),rotation="vertical",va="top")
+    if s==1:
+        eW=easterWeeks[academicYear]+0.5
+        axG.axvline(eW,color="gray",lw=6,alpha=0.5)
+        # axG.annotate("Vacation",(eW+0.125,axG.get_ylim()[0]),rotation="vertical",va="top")
+
+    axG.invert_yaxis()
+    axG.tick_params(axis="both",length=0)
+    axG.set_title(f"{title}\n{sem} Semester {academicYear}")
+    
+    # Create grid lines
+    axGx=axG.twiny()
+    axGx.set_xticks(np.arange(0.5,12.5))
+    axGx.set_xticklabels([])
+    axGx.grid(True, axis='x', linestyle='--', color='grey', alpha=0.6)
+    axGx.set_xlim(axG.get_xlim()[0],axG.get_xlim()[1])
+    axGx.tick_params(axis="both",length=0)
+    axGy=axG.twinx()
+    axGy.set_yticks(np.arange(0.5,len(mods)+0.5))
+    axGy.set_yticklabels([])
+    axGy.set_ylim(axG.get_ylim()[0],axG.get_ylim()[1])
+    axGy.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
+    axGy.tick_params(axis="both",length=0)
+    
+    # Create manual legend
+    if hasOldDeadline:
+        legendWeights=[-0.5,0,0.05,0.1,0.3,0.5]
+    else:
+        legendWeights=[0,0.05,0.1,0.3,0.5]
+    legendMarkers=[]
+    for w,wt in enumerate(legendWeights):
+        size=weight2sizecolorlabel(wt)["ms"]
+        edgecolor=weight2sizecolorlabel(wt)["ec"]
+        facecolor=weight2sizecolorlabel(wt)["fc"]
+        linewidth=weight2sizecolorlabel(wt)["lw"]
+        lab=weight2sizecolorlabel(wt)["lab"]
+        textcol=weight2sizecolorlabel(wt)["textcol"]
+        legendMarkers.append(axG.scatter(0.5,0.5,s=size,
+                            label=lab,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
+    legend=axesG[s].legend(loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
+    
+    for t,text in enumerate(legend.get_texts()):
+        text.set_color(weight2sizecolorlabel(legendWeights[t])["textcol"])
+
+    #Add deadline date key
+    if hasDays:
+        axesG[s].text(12.6,len(mods)-0.5,"Deadlines:\nMo/Tu/We/Th/Fr\n\n(*)=In-session\n(P)=Portfolio\n(U/D)=Updated",va="bottom")
+    for l,lm in enumerate(legendMarkers):
+        lm.remove()
+    extra_artists.append(legend)
+    axesG[s].set_position([0.2,0.2,0.8,figh[sem]/(figh[sem]+1)])
+    st.pyplot(figG[s])
+    if savePlots=="Yes":
+        try:
+            fileOutPng=f'plots/png/deadlines_{shortCode}_{sem}.png'
+            fileOutPdf=f'plots/pdf/deadlines_{shortCode}_{sem}.pdf'
+            figG[s].savefig(fileOutPng,bbox_inches="tight")
+            figG[s].savefig(fileOutPdf,bbox_inches="tight")
+            st.write('Plot saved to',fileOutPng)
+            st.write('Plot saved to',fileOutPdf)
+        except:
+            st.info('Unable to save plot')
+    
+            
+# # Old method for legends
+# unique_handles = []
+# unique_labels = []
+# seen_labels = set()
+# allHandles=handles["Autumn"]+handles["Spring"]
+# allLabels=labels["Autumn"]+labels["Spring"]
+# for handle, label in zip(allHandles, allLabels):
+#     if label not in seen_labels:
+#         unique_handles.append(handle)
+#         unique_labels.append(label)
+#         seen_labels.add(label)
+# plt.tight_layout(rect=[0.1, 0, 1, 0.9])
+
+# for s,sem in enumerate(semesters):
+    # axesG[s].legend(handles=unique_handles, labels=unique_labels,loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
+    # figG[s].subplots_adjust(right=0.8,top=0.9)
+    # axesG[s].set_position([0,0,0.8,figh[sem]/(figh[sem]+1)])
+    # figG[s].patches.extend([plt.Rectangle((0, 0), 1, 1, fill=None, edgecolor='red',transform=figG[s].transFigure)])
+    # figG[s].patches.extend([plt.Rectangle((0, 0), 0.8, figh[sem]/(figh[sem]+1), fill=None, edgecolor='blue',transform=figG[s].transFigure)])
+    # st.pyplot(figG[s])
+
+st.stop()
+
