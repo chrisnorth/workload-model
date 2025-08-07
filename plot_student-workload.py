@@ -40,7 +40,7 @@ if streamlit_cloud():
     academicYears=["2025/6"]
 else:
     st.info('Running locally')
-    academicYears=["2025/6","2026/7 (TBC)"]
+    academicYears=["2024/5","2025/6","2026/7 (TBC)"]
     # academicYears=["2025/6"]
 
 easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":7}
@@ -235,12 +235,13 @@ ContactTimeIn=pd.read_excel(fileIn,"ContactTime")
 ContactTimeIn.fillna(0)
     
 moduleList=Modules["Module Code"].values
-### Add MSc modules to AssessDates 
+### Add MSc modules to AssessDates and ContactTimeIn
 # Step 1: Filter MSc-derived modules
 msc_modules = Modules[(Modules["Source"] == "P") & (Modules["Alternative Module Code"].notna())]
 
 # Step 2: Create duplicated assessment rows for each MSc module
 msc_assessments = pd.DataFrame()
+msc_contact = pd.DataFrame()
 
 for _, row in msc_modules.iterrows():
     original_code = row["Alternative Module Code"]
@@ -248,14 +249,18 @@ for _, row in msc_modules.iterrows():
 
     # Find all assessment entries for the original module
     original_assessments = AssessDatesIn[AssessDatesIn["Module Code"] == original_code].copy()
+    original_contact = ContactTimeIn[ContactTimeIn["Module Code"] == original_code].copy()
 
     if not original_assessments.empty:
         # Replace Module Code with MSc Module Code
         original_assessments["Module Code"] = msc_code
+        original_contact["Module Code"] = msc_code
         msc_assessments = pd.concat([msc_assessments, original_assessments], ignore_index=True)
+        msc_contact = pd.concat([msc_contact, original_contact], ignore_index=True)
 
 # Step 3: Append the MSc assessments to the original table
 AssessDatesAll = pd.concat([AssessDatesIn, msc_assessments], ignore_index=True)
+ContactTimeIn = pd.concat([ContactTimeIn, msc_contact], ignore_index=True)
 # AssessDates.to_excel("assessments_with_msc_duplicates.xlsx", index=False)
 
 # Reduce to list of selected modules
@@ -418,6 +423,7 @@ if not showAllMods:
     fig,axes=plt.subplots(2,2,figsize=(8,8))
     x_values=np.arange(0.5,13)
     x_ticks=np.arange(1,13)
+    maxW=np.max([np.max(profileContact["Autumn"]+profileAssess["Autumn"]),np.max(profileContact["Spring"]+profileAssess["Spring"])])+1
     maxD=np.max([np.max(nDeadlines["Autumn"]),np.max(nDeadlines["Spring"])])+1
     y_ticksN=np.arange(0,maxD+1,1,dtype=int)
     
@@ -441,7 +447,7 @@ if not showAllMods:
         #     ax.annotate(nDeadlines[sem][t],(t+1,y_text[t]),ha="center")
         ax.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
         ax.set_xticks(x_ticks)
-        ax.set_ylim(0,50)
+        ax.set_ylim(0,maxW+10)
         ax.set_xlim(0.5,12.5)
         # ax.set_xlabel(f"{sem} Semester Week")
         ax.set_ylabel("Workload (Hours)")
