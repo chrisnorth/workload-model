@@ -215,17 +215,20 @@ st.divider()
 if not showAllMods:
     st.header("Estimated Workload")
     st.write("The calculations below are all approximate, and based only on contact time and workload linked to summative assessments.")
-    st.write("It assumes that all sessions with contact time are attended, and assessment workload is based on estimates.")
+    st.write("It assumes that all sessions with contact time are attended, and assessment workload is based on estimates, so are indicative only.")
     if selCredits!=120:
         st.write(f"⚠️ WARNING: Module choice is only based on {selCredits} credits.")
     profiles=["Delta","Dist","Linear"]
-    profilesDesc=["Work just before the deadline","Distribute the work evenly over the full period","Gradually increase work up to the deadline"]
-    profileName=st.radio("How would you like to work?",profilesDesc)
+    profilesDesc=["Work just before the deadline","Distribute the work evenly over the full assessment duration","Gradually (linearly) increase work up to the deadline"]
+    profileName=st.radio("How would you like to work?",profilesDesc,index=1)
+    st.write("Actual workload depends on time management, with three 'models' available below. Assuming all work is before the deadline is distorted by large projects.")
+    st.write("The 'assessment duration' is assumed to be from when it is set to when it is due, and measured in (integer) weeks. Reality will be somewhere between these three models.")
     for p,prof in enumerate(profilesDesc):
         if profileName==prof:
             profileSel=profiles[p]
 else:
-    profileSel="Delta"
+   st.write("If you select a specific programme and optional modules (if appropriate), then you will see an estimated workload profile based on contact time and assessment workload.")
+   profileSel="Delta"
 
 
 AssessDatesIn=pd.read_excel(fileIn,"Assessments")
