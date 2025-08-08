@@ -228,7 +228,7 @@ if not showAllMods:
     if selCredits!=120:
         st.write(f"⚠️ WARNING: Module choice is only based on {selCredits} credits.")
     profiles=["Delta","Dist","Linear"]
-    profilesDesc=["Work just before the deadline","Distribute the work evenly over the full assessment duration","Gradually (linearly) increase work up to the deadline"]
+    profilesDesc=["Complete work in week of deadline","Distribute the work evenly over the full assessment duration","Gradually (linearly) increase work up to the deadline"]
     profileName=st.radio("How would you like to work?",profilesDesc,index=1)
     st.write("Actual workload depends on time management, with three 'models' available below. Assuming all work is before the deadline is distorted by large projects.")
     st.write("The 'assessment duration' is assumed to be from when it is set to when it is due, and measured in (integer) weeks. Reality will be somewhere between these three models.")
