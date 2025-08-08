@@ -145,15 +145,20 @@ else:
         st.write("**Warning: workload calculations are not possible when selecting all modules.**")
 
     # Select Autumn modules
-    optModListSEM1=optMods[optMods["Semester"]=="SEM1"]["Module Code"].to_list()
+    optModsSEM1 = optMods[optMods["Semester"]=="SEM1"]
+    optModListSEM1_display = [f"{row['Module Code']} - {row['Module Title']}" for _, row in optModsSEM1.iterrows()]
+    optModListSEM1_display.sort()  # Sort alphabetically by the display string
+    optModListSEM1_codes = [item.split(" - ")[0] for item in optModListSEM1_display]  # Extract codes
+
     st.write("Core module credits (Autumn):", int(coreCreditsAutumn))
-    if len(optModListSEM1)>0:
+    if len(optModListSEM1_display)>0:
         st.write("Optional modules (Autumn Semester)",optMods[optMods["Semester"]=="SEM1"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
         if showAllMods:
-            optModSelCodeSEM1=optModListSEM1
+            optModSelCodeSEM1=optModListSEM1_codes
             st.write("*Selecting all Autumn semester optional modules**")
         else:
-            optModSelCodeSEM1=st.multiselect("Select your Autumn Semester optional modules:",optModListSEM1)
+            selected_display=st.multiselect("Select your Autumn Semester optional modules:",optModListSEM1_display)
+            optModSelCodeSEM1 = [item.split(" - ")[0] for item in selected_display]  # Extract codes from selection
     else:
         st.write("You have no optional selections to make for Autumn semester")
         optModSelCodeSEM1=[]
@@ -165,15 +170,19 @@ else:
     
 
     # Select Spring modules
-    optModListSEM2=optMods[optMods["Semester"]=="SEM2"]["Module Code"].to_list()
+    optModsSEM2 = optMods[optMods["Semester"]=="SEM2"]
+    optModListSEM2_display = [f"{row['Module Code']} - {row['Module Title']}" for _, row in optModsSEM2.iterrows()]
+    optModListSEM2_display.sort()  # Sort alphabetically by the display string
+    optModListSEM2_codes = [item.split(" - ")[0] for item in optModListSEM2_display]  # Extract codes
     st.write("Core module credits (Spring):", int(coreCreditsSpring))
-    if len(optModListSEM2)>0:
+    if len(optModListSEM2_display)>0:
         st.write("Optional modules (Spring Semester)",optMods[optMods["Semester"]=="SEM2"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
         if showAllMods:
-            optModSelCodeSEM2=optModListSEM2
+            optModSelCodeSEM2=optModListSEM2_codes
             st.write("**Selecting all Spring semester optional modules**")
         else:
-            optModSelCodeSEM2=st.multiselect("Select your Spring Semester optional modules:",optModListSEM2)
+            selected_display=st.multiselect("Select your Spring Semester optional modules:",optModListSEM2_display)
+            optModSelCodeSEM2 = [item.split(" - ")[0] for item in selected_display]  # Extract codes from selection
     else:
         optModSelCodeSEM2=[]
 
