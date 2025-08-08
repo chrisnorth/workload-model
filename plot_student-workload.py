@@ -40,7 +40,7 @@ if streamlit_cloud():
     academicYears=["2025/6"]
 else:
     st.info('Running locally')
-    academicYears=["2024/5","2025/6","2026/7 (TBC)"]
+    academicYears=["2025/6","2024/5","2026/7 (TBC)"]
     # academicYears=["2025/6"]
 
 easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":7}
@@ -462,7 +462,8 @@ if not showAllMods:
             eW=easterWeeks[academicYear]+0.5
             ax.axvline(eW,color="gray",lw=6,alpha=0.5)
             ax.annotate("Vacation",(eW+0.25,ax.get_ylim()[1]),rotation="vertical",va="top")
-                        
+
+        ### PLOT N Deadlines plot
         dataNDeadlines=nDeadlines[sem]
         y_NDeadlines=np.concatenate([[dataNDeadlines[0]],dataNDeadlines])
         dataNDeadlinesBig=nDeadlinesBig[sem]
@@ -470,7 +471,7 @@ if not showAllMods:
         axN=axes[1,s]
         axN.plot(x_values,y_NDeadlines,"g",drawstyle="steps-pre",label="All Deadlines")
         axN.fill_between(x_values,y_NDeadlines,color="g",alpha=0.3,step="pre")
-        axN.plot(x_values,y_NDeadlinesBig,"r",drawstyle="steps-pre",label="Deadlines (1 Hour+)")
+        axN.plot(x_values,y_NDeadlinesBig,"r",drawstyle="steps-pre",label="Deadlines with workload >=1hr")
         axN.fill_between(x_values,y_NDeadlinesBig,color="r",alpha=0.3,step="pre")
         axN.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
         axN.set_xticks(x_ticks)
@@ -549,7 +550,7 @@ def weight2sizecolorlabel(w):
     elif w<0:
         return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey'}
     elif w==0:
-        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'black'}
+        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'grey'}
     elif w<=0.05:
         return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%",'textcol':'black'}
     elif w<=0.1:
@@ -598,11 +599,21 @@ for s,sem in enumerate(semesters):
                 labs.append(weight2sizecolorlabel(wt)["lab"])
                 textcols.append(weight2sizecolorlabel(wt)["textcol"])
             # st.write(m,mod,nassess,a,dlGrid[sem][mod]["grid"][an]["type"],yass[0],len(dlGrid[sem][mod]["grid"][an]["weeks"]))
-            axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),
-                        edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
+            # axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"],yplot,s=np.array(sizes),
+            #             edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
             if hasDays:
                 for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
-                    axG.text(week+0.15,yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",fontsize=8,color=textcols[w])
+                    if dlGrid[sem][mod]["grid"][an]["day"]==" " or dlGrid[sem][mod]["grid"][an]["day"]=="":
+                        axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w],yplot[w],s=np.array(sizes)[w],
+                            edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w])
+                    else:
+                        axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w]-0.25,yplot[w],s=np.array(sizes)[w],
+                            edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w])
+                        axG.text(week-0.15*(1-sizes[w]/100),yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",fontsize=8,color=textcols[w])
+            else:
+                 for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
+                    axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w],yplot[w],s=np.array(sizes)[w],
+                        edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w])
             yticks.append(yass)
             ylabels.append(aName)
         if coreMod:
