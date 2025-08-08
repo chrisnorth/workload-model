@@ -307,6 +307,24 @@ nDeadlinesBig={"Autumn":np.zeros(len(AutumnWeeks),dtype=int),"Spring":np.zeros(l
 dlGrid={"Autumn":{},"Spring":{}}
 hasOldDeadline=False
 
+# Track workload by CA type
+nDeadlinesByType={"Autumn":{},"Spring":{}}
+profileAssessByType={"Autumn":{},"Spring":{}}
+caTypes=set()
+
+# First pass: collect all CA types
+for a,assess in AssessDates.iterrows():
+    assessType = assess["CA type"]
+    if pd.notna(assessType):
+        caTypes.add(assessType)
+
+# Initialize dictionaries for each CA type
+for caType in caTypes:
+    profileAssessByType["Autumn"][caType] = np.zeros(len(AutumnWeeks))
+    profileAssessByType["Spring"][caType] = np.zeros(len(SpringWeeks))
+    nDeadlinesByType["Autumn"][caType] = np.zeros(len(AutumnWeeks), dtype=int)
+    nDeadlinesByType["Spring"][caType] = np.zeros(len(SpringWeeks), dtype=int)
+    
 for wA,weekA in enumerate(AutumnWeeks):
     conTime=ContactTime[weekA].sum()
     if conTime>0:
@@ -336,12 +354,20 @@ for a,assess in AssessDates.iterrows():
             assessWeeks = assess["Duration"]
             wR=np.arange(wA-assessWeeks,wA,dtype=int)+1
             wX0=np.min(wR)
+
+            ### add to deadlines counter
             if assSum=="Y":
                 nDeadlines["Autumn"][wA] = nDeadlines["Autumn"][wA] + 1
+                if pd.notna(assessType) and assessType in nDeadlinesByType["Autumn"]:
+                    nDeadlinesByType["Autumn"][assessType][wA] += 1
                 if assessTime>=1:
                     nDeadlinesBig["Autumn"][wA] = nDeadlinesBig["Autumn"][wA] + 1
+            
+            ### add modules to grid object
             if not mod in dlGrid["Autumn"]:
                 dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            
+            ### add to deadlines grid for that assessment
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Autumn"][mod]["grid"]:
                     dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
@@ -350,18 +376,26 @@ for a,assess in AssessDates.iterrows():
                 dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
             elif assSum=="N":
                 dlGrid["Autumn"][mod]["grid"][a]["weights"].append(0)
+            
+            ### set workload
             if profileSel=="Delta":
                 profileAssess["Autumn"][wA] = profileAssess["Autumn"][wA] + assessTime
+                if pd.notna(assessType) and assessType in profileAssessByType["Autumn"]:
+                        profileAssessByType["Autumn"][assessType][wA] += assessTime
                 if assCore:
                     profileAssessCore["Autumn"][wA] = profileAssessCore["Autumn"][wA] + assessTime
             elif profileSel=="Dist":
                 for wX in wR:
                     profileAssess["Autumn"][wX] = profileAssess["Autumn"][wX] + assessTime/assessWeeks
+                    if pd.notna(assessType) and assessType in profileAssessByType["Autumn"]:
+                        profileAssessByType["Autumn"][assessType][wX] += assessTime/assessWeeks
                     if assCore:
                         profileAssessCore["Autumn"][wX] = profileAssessCore["Autumn"][wX] + assessTime/assessWeeks
             elif profileSel=="Linear":       
                 for wX in wR:
                     profileAssess["Autumn"][wX] = profileAssess["Autumn"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
+                    if pd.notna(assessType) and assessType in profileAssessByType["Autumn"]:
+                        profileAssessByType["Autumn"][assessType][wX] += assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
                     if assCore:
                         profileAssessCore["Autumn"][wX] = profileAssessCore["Autumn"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
         elif assessTime<0:
@@ -385,12 +419,20 @@ for a,assess in AssessDates.iterrows():
             assessWeeks = assess["Duration"]
             wR=np.arange(wS-assessWeeks,wS,dtype=int)+1
             wX0=np.min(wR)
+
+            ### add to deadlines counter
             if assSum=="Y":
                 nDeadlines["Spring"][wS] = nDeadlines["Spring"][wS] + 1
+                if pd.notna(assessType) and assessType in nDeadlinesByType["Spring"]:
+                    nDeadlinesByType["Spring"][assessType][wS] += 1
                 if assessTime>=1:
                     nDeadlinesBig["Spring"][wS] = nDeadlinesBig["Spring"][wS] + 1
+            
+            ### add modules to grid object
             if not mod in dlGrid["Spring"]:
                 dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
+            
+            ### add to deadlines grid for that assessment
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Spring"][mod]["grid"]:
                     dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
@@ -401,16 +443,22 @@ for a,assess in AssessDates.iterrows():
                 dlGrid["Spring"][mod]["grid"][a]["weights"].append(0)
             if profileSel=="Delta":
                 profileAssess["Spring"][wS] = profileAssess["Spring"][wS] + assessTime
+                if pd.notna(assessType) and assessType in profileAssessByType["Spring"]:
+                    profileAssessByType["Spring"][assessType][wS] += assessTime
                 if assCore:
                     profileAssessCore["Spring"][wS] = profileAssessCore["Spring"][wS] + assessTime
             elif profileSel=="Dist":
                 for wX in wR:
                     profileAssess["Spring"][wX] = profileAssess["Spring"][wX] + assessTime/assessWeeks
+                    if pd.notna(assessType) and assessType in profileAssessByType["Spring"]:
+                        profileAssessByType["Spring"][assessType][wX] += assessTime/assessWeeks
                     if assCore:
                         profileAssessCore["Spring"][wX] = profileAssessCore["Spring"][wX] + assessTime/assessWeeks
             elif profileSel=="Linear":       
                 for wX in wR:
                     profileAssess["Spring"][wX] = profileAssess["Spring"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
+                    if pd.notna(assessType) and assessType in profileAssessByType["Spring"]:
+                        profileAssessByType["Spring"][assessType][wX] += assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
                     if assCore:
                         profileAssessCore["Spring"][wX] = profileAssessCore["Spring"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
         elif assessTime<0:
@@ -428,6 +476,57 @@ for a,assess in AssessDates.iterrows():
 
 # st.stop()
 
+caTypesList = sorted(list(caTypes))
+def caType2Label(caType):
+    """
+    Converts a CA type to a more readable label.
+    """
+    if pd.isna(caType):
+        return "Unknown"
+    caType = caType.strip().upper()
+    if caType == "CT":
+        return "Class Test"
+    elif caType == "CW":
+        return "Coursework"
+    elif caType == "PJ":
+        return "Project"
+    elif caType == "PR":
+        return "Presentation"
+    elif caType == "PO":
+        return "Portfolio"
+    elif caType == "QU":
+        return "Quiz"
+    elif caType == "OA":
+        return "Oral Assessment"
+    elif caType == "LB":
+        return "Lab diary"
+    else:
+        return caType.capitalize()
+
+caTypeColorMap = {
+        "CT": 0,    # Class Test - red
+        "CW": 1,    # Coursework - blue  
+        "PJ": 2,    # Project - green
+        "PR": 3,    # Presentation - purple
+        "PO": 4,    # Portfolio - orange
+        "QU": 5,    # Quiz - brown
+        "OA": 6,    # Oral Assessment - pink
+        "LB": 7,    # Lab diary - gray
+    }
+colors = plt.cm.Set1(np.linspace(0, 1, 9))  # Get 9 colors from Set1
+caTypeColors = {}
+
+for caType in caTypesList:
+    if pd.isna(caType):
+        # Use the last color for unknown types
+        caTypeColors[caType] = colors[8]
+    else:
+        caType_clean = caType.strip().upper()
+        if caType_clean in caTypeColorMap:
+            caTypeColors[caType] = colors[caTypeColorMap[caType_clean]]
+        else:
+            # For any other types, use a default color
+            caTypeColors[caType] = colors[8]  # Gray for unknown types
 semesters=["Autumn","Spring"]
 
 if not showAllMods:
@@ -435,9 +534,15 @@ if not showAllMods:
     fig,axes=plt.subplots(2,2,figsize=(8,8))
     x_values=np.arange(0.5,13)
     x_ticks=np.arange(1,13)
+    x_tick_positions=np.arange(0.5,12.5)  # Position tick marks between weeks
     maxW=np.max([np.max(profileContact["Autumn"]+profileAssess["Autumn"]),np.max(profileContact["Spring"]+profileAssess["Spring"])])+1
     maxD=np.max([np.max(nDeadlines["Autumn"]),np.max(nDeadlines["Spring"])])+1
     y_ticksN=np.arange(0,maxD+1,1,dtype=int)
+    
+    # # Define colors for different CA types
+    # caTypesList = sorted(list(caTypes))
+    # colors = plt.cm.Set1(np.linspace(0, 1, len(caTypesList)))
+    # caTypeColors = dict(zip(caTypesList, colors))
     
     for s,sem in enumerate(semesters):
         dataContact=profileContact[sem]
@@ -448,29 +553,58 @@ if not showAllMods:
         y_AssessCore=np.concatenate([[dataAssessCore[0]],dataAssessCore])
 
         ax=axes[0,s]
-        ax.plot(x_values,y_Assess+y_Contact,"b",drawstyle="steps-pre",label="Total Workload")
-        ax.fill_between(x_values,y_Assess+y_Contact,color="b",alpha=0.3,step="pre")
-        # ax.plot(x_values,y_AssessCore+y_Contact,"r",drawstyle="steps-pre",label="Core Workload")
-        ax.plot(x_values,y_Contact,"k",linestyle=":",drawstyle="steps-pre",label="Contact Time")
-        
 
-        # y_text=dataAssess + dataContact + 1
-        # for t in range(len(nDeadlines[sem])):
-        #     ax.annotate(nDeadlines[sem][t],(t+1,y_text[t]),ha="center")
+        # Create stacked bar chart for assessment types
+        bottom = y_Contact.copy()
+        width = 1.0
+        x_bar = np.arange(1, 13)
+        
+        for caType in caTypesList:
+            if caType in profileAssessByType[sem]:
+                data = profileAssessByType[sem][caType]
+                ax.bar(x_bar, data, width, bottom=bottom[1:], 
+                      color=caTypeColors[caType], alpha=0.7, label=caType2Label(caType))
+                bottom[1:] += data
+        
+        # Plot contact time as baseline
+        ax.plot(x_values,y_Contact,"k",linestyle=":",drawstyle="steps-pre",label="Contact Time")
+        ax.fill_between(x_values,y_Contact,color="gray",alpha=0.3,step="pre")
+        
+        # Plot total workload line
+        ax.plot(x_values,y_Assess+y_Contact,"b",drawstyle="steps-pre",linewidth=2,label="Total Workload")
+
+        
         ax.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
-        ax.set_xticks(x_ticks)
+        
+        # Set custom x-axis grid lines between weeks
+        ax.set_xticks(x_ticks)  # Labels at week centers
+        ax.tick_params(axis='x', length=0,labelsize=8)  # Hide the default tick marks
+        
+        # Add custom grid lines between weeks
+        for x_pos in x_tick_positions:
+            ax.axvline(x_pos, color='grey', linestyle='--', alpha=0.6, linewidth=0.5)
+        
+        # Add top x-axis with dates
+        ax_top = ax.twiny()
+        ax_top.set_xlim(0.5,12.5)
+        ax_top.tick_params(axis='x', length=0,labelsize=8)  # Hide the default tick marks
+        ax_top.set_xticks(x_ticks)
+        ax_top.set_xlabel(f"{sem} Semester Week")
+   
+
         ax.set_ylim(0,maxW+10)
         ax.set_xlim(0.5,12.5)
         # ax.set_xlabel(f"{sem} Semester Week")
-        ax.set_ylabel("Workload (Hours)")
+        ax.set_ylabel("Estimated Workload (Hours)")
         if s==0:
-            ax.legend(loc="upper left")
             ax.axvline(11.5,color="gray",lw=6,alpha=0.5)
             ax.annotate("Vacation",(11.75,ax.get_ylim()[1]),rotation="vertical",va="top")
         if s==1:
+            legW=ax.legend(loc="upper left", bbox_to_anchor=(1.05, 1),fontsize='small')
             eW=easterWeeks[academicYear]+0.5
             ax.axvline(eW,color="gray",lw=6,alpha=0.5)
             ax.annotate("Vacation",(eW+0.25,ax.get_ylim()[1]),rotation="vertical",va="top")
+        
 
         ### PLOT N Deadlines plot
         dataNDeadlines=nDeadlines[sem]
@@ -478,27 +612,47 @@ if not showAllMods:
         dataNDeadlinesBig=nDeadlinesBig[sem]
         y_NDeadlinesBig=np.concatenate([[dataNDeadlinesBig[0]],dataNDeadlinesBig])
         axN=axes[1,s]
+
+        bottom_dl = np.zeros(12)
+        
+        for caType in caTypesList:
+            if caType in nDeadlinesByType[sem]:
+                data_all = nDeadlinesByType[sem][caType]
+                
+                # Stack all deadlines
+                axN.bar(x_bar, data_all, width, bottom=bottom_dl, 
+                       color=caTypeColors[caType], alpha=0.6, label=caType2Label(caType))
+                bottom_dl += data_all
+                
+        
+
         axN.plot(x_values,y_NDeadlines,"g",drawstyle="steps-pre",label="All Deadlines")
-        axN.fill_between(x_values,y_NDeadlines,color="g",alpha=0.3,step="pre")
-        axN.plot(x_values,y_NDeadlinesBig,"r",drawstyle="steps-pre",label="Deadlines with workload >=1hr")
-        axN.fill_between(x_values,y_NDeadlinesBig,color="r",alpha=0.3,step="pre")
+        # axN.plot(x_values,y_NDeadlinesBig,"r",drawstyle="steps-pre",label="Workload >=1hr")
         axN.grid(True, axis='y', linestyle='--', color='grey', alpha=0.6)
+        
+        # Same treatment for the deadlines plot
         axN.set_xticks(x_ticks)
+        axN.tick_params(axis='x', length=0,labelsize=8)
+        
+        # Add custom grid lines between weeks
+        for x_pos in x_tick_positions:
+            axN.axvline(x_pos, color='grey', linestyle='--', alpha=0.6, linewidth=0.5)
+        
         axN.set_xlim(0.5,12.5)
         axN.set_ylim(0,maxD)
         axN.set_yticks(y_ticksN)
         axN.set_xlabel(f"{sem} Semester Week")
         axN.set_ylabel("# Deadlines")
         if s==0:
-            axN.legend(loc="upper left")
             axN.axvline(11.5,color="gray",lw=6,alpha=0.5)
             axN.annotate("Vacation",(11.75,axN.get_ylim()[1]),rotation="vertical",va="top")
         if s==1:
+            legN=axN.legend(loc="upper left", bbox_to_anchor=(1.05, 1),fontsize='small')
             eW=easterWeeks[academicYear]+0.5
             axN.axvline(eW,color="gray",lw=6,alpha=0.5)
             axN.annotate("Vacation",(eW+0.25,axN.get_ylim()[1]),rotation="vertical",va="top")
 
-    plt.tight_layout(rect=[0, 0, 1, 0.9])
+    plt.tight_layout(rect=[0, 0, 1, 0.8])
     st.pyplot(fig)
     if savePlots=="Yes":
         try:
