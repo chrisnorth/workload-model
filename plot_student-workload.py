@@ -862,7 +862,7 @@ for s,sem in enumerate(semesters):
 
     #Add deadline date key
     if hasDays:
-        axesG[s].text(12.6,len(mods)-0.5,"Deadlines:\nMo/Tu/We/Th/Fr\n\n(*)=In-session\n(P)=Portfolio\n(U/D)=Updated",va="bottom")
+        axesG[s].text(12.6,len(mods)-0.5,"Deadlines:\nMo/Tu/We/Th/Fr\n\n(*)=In-session\n(P)=Portfolio",va="bottom")
     for l,lm in enumerate(legendMarkers):
         lm.remove()
     extra_artists.append(legend)
