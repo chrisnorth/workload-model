@@ -709,19 +709,21 @@ for s,sem in enumerate(semesters):
 
 def weight2sizecolorlabel(w):
     if w<-0.1:
-        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey'}
+        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey','alpha':0}
+        # return {'ms':0  ,'ec':'orange','lw':0,'fc':'yellow','lab':'','textcol':'white','alpha':0}
     elif w<0:
-        return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey'}
+        return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey','alpha':1}
+        # return {'ms':0,'ec':'orange','lw':0,'fc':'yellow','lab':"",'textcol':'white','alpha':0}
     elif w==0:
-        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'grey'}
+        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'grey','alpha':1}
     elif w<=0.05:
-        return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%",'textcol':'black'}
+        return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%",'textcol':'black','alpha':1}
     elif w<=0.1:
-        return {'ms':30,'ec':'green','lw':0,'fc':'green','lab':"5-10%",'textcol':'black'}
+        return {'ms':30,'ec':'green','lw':0,'fc':'green','lab':"5-10%",'textcol':'black','alpha':1}
     elif w<=0.3:
-        return {'ms':80,'ec':'red','lw':1,'fc':'white','lab':"10-30%",'textcol':'black'}
+        return {'ms':80,'ec':'red','lw':1,'fc':'white','lab':"10-30%",'textcol':'black','alpha':1}
     else:
-        return {'ms':100,'ec':'red','lw':0,'fc':'red','lab':">30%",'textcol':'black'}
+        return {'ms':100,'ec':'red','lw':0,'fc':'red','lab':">30%",'textcol':'black','alpha':1}
     
 assessSeen={"Autumn":set(),"Spring":set()}
 handles={}
@@ -749,6 +751,7 @@ for s,sem in enumerate(semesters):
             yplot=[yass]*len(dlGrid[sem][mod]["grid"][an]["weeks"])
             weights=dlGrid[sem][mod]["grid"][an]["weights"]
             sizes=[]
+            alphas=[]
             edgecolors=[]
             facecolors=[]
             linewidths=[]
@@ -756,6 +759,7 @@ for s,sem in enumerate(semesters):
             textcols=[]
             for w,wt in enumerate(weights):
                 sizes.append(weight2sizecolorlabel(wt)["ms"])
+                alphas.append(weight2sizecolorlabel(wt)["alpha"])
                 edgecolors.append(weight2sizecolorlabel(wt)["ec"])
                 facecolors.append(weight2sizecolorlabel(wt)["fc"])
                 linewidths.append(weight2sizecolorlabel(wt)["lw"])
@@ -768,15 +772,16 @@ for s,sem in enumerate(semesters):
                 for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
                     if dlGrid[sem][mod]["grid"][an]["day"]==" " or dlGrid[sem][mod]["grid"][an]["day"]=="":
                         axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w],yplot[w],s=np.array(sizes)[w],
-                            edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w])
+                            edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w],alpha=alphas[w])
                     else:
                         axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w]-0.25,yplot[w],s=np.array(sizes)[w],
-                            edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w])
-                        axG.text(week-0.15*(1-sizes[w]/100),yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",fontsize=8,color=textcols[w])
+                            edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w],alpha=alphas[w])
+                        axG.text(week-0.15*(1-sizes[w]/100),yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",
+                            fontsize=8,color=textcols[w],alpha=alphas[w])
             else:
                  for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
                     axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w],yplot[w],s=np.array(sizes)[w],
-                        edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w])
+                        edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w],alpha=alphas[w])
             yticks.append(yass)
             ylabels.append(aName)
         if coreMod:
@@ -840,6 +845,7 @@ for s,sem in enumerate(semesters):
         legendWeights=[0,0.05,0.1,0.3,0.5]
     legendMarkers=[]
     for w,wt in enumerate(legendWeights):
+        alpha=weight2sizecolorlabel(wt)["alpha"]
         size=weight2sizecolorlabel(wt)["ms"]
         edgecolor=weight2sizecolorlabel(wt)["ec"]
         facecolor=weight2sizecolorlabel(wt)["fc"]
@@ -847,11 +853,12 @@ for s,sem in enumerate(semesters):
         lab=weight2sizecolorlabel(wt)["lab"]
         textcol=weight2sizecolorlabel(wt)["textcol"]
         legendMarkers.append(axG.scatter(0.5,0.5,s=size,
-                            label=lab,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth))
+                            label=lab,edgecolor=edgecolor,facecolor=facecolor,linewidth=linewidth,alpha=alpha))
     legend=axesG[s].legend(loc='upper right',bbox_to_anchor=(1.25,1),title="Weighting")
     
     for t,text in enumerate(legend.get_texts()):
         text.set_color(weight2sizecolorlabel(legendWeights[t])["textcol"])
+        text.set_alpha(weight2sizecolorlabel(legendWeights[t])["alpha"])
 
     #Add deadline date key
     if hasDays:
