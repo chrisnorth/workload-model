@@ -707,7 +707,7 @@ for s,sem in enumerate(semesters):
                 assessColours.append(available_colors[col_idx % len(available_colors)])
                 col_idx +=1
 
-def weight2sizecolorlabel(w):
+def weight2sizecolorlabel(w,portfolio=False):
     if w<-0.1:
         return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey','alpha':0}
         # return {'ms':0  ,'ec':'orange','lw':0,'fc':'yellow','lab':'','textcol':'white','alpha':0}
@@ -862,7 +862,7 @@ for s,sem in enumerate(semesters):
 
     #Add deadline date key
     if hasDays:
-        axesG[s].text(12.6,len(mods)-0.5,"Deadlines:\nMo/Tu/We/Th/Fr\n\n(*)=In-session\n(P)=Portfolio",va="bottom")
+        axesG[s].text(12.6,len(mods)-0.5,"Deadlines:\nMo/Tu/We/Th/Fr\n\n(*)=In-session\n       assessment\n(P)=Portfolio or\n       component" ,va="bottom",ha="left")
     for l,lm in enumerate(legendMarkers):
         lm.remove()
     extra_artists.append(legend)
