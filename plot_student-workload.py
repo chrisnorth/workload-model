@@ -36,7 +36,7 @@ def year2level(year,yrtype="UG"):
 
 # Set student properties
 if streamlit_cloud():
-    st.info('Running on streamlit cloud.')
+    # st.info('Running on streamlit cloud.')
     academicYears=["2025/6"]
 else:
     st.info('Running locally')
