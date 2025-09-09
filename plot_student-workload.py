@@ -123,28 +123,32 @@ st.divider()
 st.header("Module Selection")
     # st.subheader("Select Optional Modules")
 
-showAllMods=st.checkbox("Show deadlines for all available modules?")
-if showAllMods:
-    st.write("**Warning: workload calculations are not possible when selecting all modules.**")
+if not showAllProgs:
+    showAllMods=st.checkbox("Show deadlines for all available modules?")
+    if showAllMods:
+        st.write("**Warning: workload calculations are not possible when selecting all modules.**")
+else:
+    showAllMods=True
 
-st.subheader("Core modules")
-coreMods_display = coreMods.copy()
-coreMods_display["Semester"] = coreMods_display["Semester"].replace({"SEM1": "Autumn", "SEM2": "Spring", "SEMD": "Full Year"})
-coreMods_display["Exam Weight (%)"] = coreMods_display["Exam Weight (%)"].astype(int)  # Make integer
+if not showAllProgs and not showAllMods:
+    st.subheader("Core modules")
+    coreMods_display = coreMods.copy()
+    coreMods_display["Semester"] = coreMods_display["Semester"].replace({"SEM1": "Autumn", "SEM2": "Spring", "SEMD": "Full Year"})
+    coreMods_display["Exam Weight (%)"] = coreMods_display["Exam Weight (%)"].astype(int)  # Make integer
 
-st.write(coreMods_display[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
-# st.write("_SEM1=Autumn, SEM2=Spring, SEMD=Full Year_")
+    st.write(coreMods_display[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+    # st.write("_SEM1=Autumn, SEM2=Spring, SEMD=Full Year_")
 
-# Create a DataFrame for display
-core_credits_df = pd.DataFrame({
-    "Semester": ["Autumn", "Spring"],
-    "Core Credits": [int(coreCreditsAutumn), int(coreCreditsSpring)],
-    "# Core Exams": [nExamsAutumnCore, nExamsSpringCore]
-})
+    # Create a DataFrame for display
+    core_credits_df = pd.DataFrame({
+        "Semester": ["Autumn", "Spring"],
+        "Core Credits": [int(coreCreditsAutumn), int(coreCreditsSpring)],
+        "# Core Exams": [nExamsAutumnCore, nExamsSpringCore]
+    })
 
-    
-st.write("Core Credits by Semester")
-st.write(core_credits_df.to_html(index=False),unsafe_allow_html=True)
+        
+    st.write("Core Credits by Semester")
+    st.write(core_credits_df.to_html(index=False),unsafe_allow_html=True)
 
 if showAllProgs:
     st.write("Available modules are:",coreMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
@@ -195,7 +199,6 @@ else:
         optModSelCodeSEM1=[]
     optCreditSelSEM1=optMods[optMods["Module Code"].isin(optModSelCodeSEM1)]["Credits"].sum()
     autumnCredits=optCreditSelSEM1 + coreCreditsAutumn
-    nExamsAutumn=nExamsAutumnCore + len(optMods[(optMods["Module Code"].isin(optModSelCodeSEM1))&(optMods["Exam Weight (%)"]>0)])
     # st.write("Autumn semester credits:",int(autumnCredits))
     # st.write("Autumn semester exams:", nExamsAutumn)
     
@@ -225,7 +228,6 @@ else:
 
     optCreditSelSEM2=optMods[optMods["Module Code"].isin(optModSelCodeSEM2)]["Credits"].sum()
     springCredits=optCreditSelSEM2 + coreCreditsSpring
-    nExamsSpring=nExamsSpringCore + len(optMods[(optMods["Module Code"].isin(optModSelCodeSEM2))&(optMods["Exam Weight (%)"]>0)])
     # st.write("Spring semester credits:",int(springCredits))
     # st.write("Spring semester exams:", nExamsSpring)
     optModSelCode = optModSelCodeSEM1 + optModSelCodeSEM2
@@ -238,13 +240,14 @@ autumnCredits=int(selMod[selMod["Semester"]=="SEM1"]["Credits"].sum()+selMod[sel
 springCredits=int(selMod[selMod["Semester"]=="SEM2"]["Credits"].sum()+selMod[selMod["Semester"]=="SEMD"]["Credits"].sum()/2)
 selCredits=autumnCredits + springCredits
 
-st.subheader("**Selected credits**")
-all_credits_df = pd.DataFrame({
-    "Semester": ["Autumn", "Spring"],
-    "Credits": [autumnCredits, springCredits],
-    "# Exams": [nExamsAutumn, nExamsSpring]
-})
-st.write(all_credits_df.to_html(index=False),unsafe_allow_html=True)
+if not showAllMods and not showAllProgs:
+    st.subheader("**Selected credits**")
+    all_credits_df = pd.DataFrame({
+        "Semester": ["Autumn", "Spring"],
+        "Credits": [autumnCredits, springCredits],
+        "# Exams": [nExamsAutumn, nExamsSpring]
+    })
+    st.write(all_credits_df.to_html(index=False),unsafe_allow_html=True)
 
 if not showAllMods:
     if optCreditSel<optCreditsAvail:
