@@ -78,6 +78,7 @@ colName=columns[studentCourseType][studentCourse]
 if studentCourse=="Show modules for all programmes":
     showAllProgs=True
     st.write(f"**Showing All modules for {studentCourseType} student in Year {studentYear} (Level {studentLevel}) of study**")
+    st.write("If you would like to view your estimated workload profile, please select a specific course and (where appropriate), optional modules")
     shortCode=f'{academicYear.replace("/","-")}_{studentCourseType}_yr{studentYear}_All'
     if streamlit_cloud():
         savePlots="No"
@@ -121,6 +122,30 @@ optMods=Modules[(Modules[colName]=="O")&(Modules["Level"]==studentLevel)&(Module
 st.divider()
 st.header("Module Selection")
     # st.subheader("Select Optional Modules")
+
+showAllMods=st.checkbox("Show deadlines for all available modules?")
+if showAllMods:
+    st.write("**Warning: workload calculations are not possible when selecting all modules.**")
+
+st.subheader("Core modules")
+coreMods_display = coreMods.copy()
+coreMods_display["Semester"] = coreMods_display["Semester"].replace({"SEM1": "Autumn", "SEM2": "Spring", "SEMD": "Full Year"})
+coreMods_display["Exam Weight (%)"] = coreMods_display["Exam Weight (%)"].astype(int)  # Make integer
+
+st.write(coreMods_display[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+# st.write("_SEM1=Autumn, SEM2=Spring, SEMD=Full Year_")
+
+# Create a DataFrame for display
+core_credits_df = pd.DataFrame({
+    "Semester": ["Autumn", "Spring"],
+    "Core Credits": [int(coreCreditsAutumn), int(coreCreditsSpring)],
+    "# Core Exams": [nExamsAutumnCore, nExamsSpringCore]
+})
+
+    
+st.write("Core Credits by Semester")
+st.write(core_credits_df.to_html(index=False),unsafe_allow_html=True)
+
 if showAllProgs:
     st.write("Available modules are:",coreMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
     st.write("Selecting all modules for all programmes")
@@ -134,15 +159,14 @@ elif coreCredits==120:
     # optCreditSel=optMods[optMods["Module Code"].isin(optModSelCode)]["Credits"].sum()
 else:
     st.subheader("Optional module selection")
-    st.write("Remaining optional credits:",optCreditsAvail)
-    st.write("Please consult SIMS for any further conditions of module selection.")
+
+
+    st.write("Total optional credits:",optCreditsAvail)
+    st.write("Please consult SIMS, and the Module Catalogue for any further conditions of module selection.")
     # st.write("Optional modules",optMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
     
     optMods=Modules[(Modules[colName]=="O")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
     
-    showAllMods=st.checkbox("Select all available modules?")
-    if showAllMods:
-        st.write("**Warning: workload calculations are not possible when selecting all modules.**")
 
     # Select Autumn modules
     optModsSEM1 = optMods[optMods["Semester"]=="SEM1"]
@@ -150,47 +174,60 @@ else:
     optModListSEM1_display.sort()  # Sort alphabetically by the display string
     optModListSEM1_codes = [item.split(" - ")[0] for item in optModListSEM1_display]  # Extract codes
 
-    st.write("Core module credits (Autumn):", int(coreCreditsAutumn))
+    # st.write("Core module credits (Autumn):", int(coreCreditsAutumn))
+    st.write("**Autumn Semester**")
     if len(optModListSEM1_display)>0:
-        st.write("Optional modules (Autumn Semester)",optMods[optMods["Semester"]=="SEM1"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
         if showAllMods:
             optModSelCodeSEM1=optModListSEM1_codes
-            st.write("*Selecting all Autumn semester optional modules**")
+            st.write("**Showing all Autumn semester optional modules**")
         else:
             selected_display=st.multiselect("Select your Autumn Semester optional modules:",optModListSEM1_display)
             optModSelCodeSEM1 = [item.split(" - ")[0] for item in selected_display]  # Extract codes from selection
+        
+        optMods_display = optMods.copy()
+        optMods_display["Selected"] = optMods_display["Module Code"].isin(optModSelCodeSEM1).map({True: "✔️", False: ""})
+        optMods_display["Exam Weight (%)"] = optMods_display["Exam Weight (%)"].astype(int)  # Make integer
+        st.write(optMods_display[optMods_display["Semester"]=="SEM1"][["Module Code", "Module Title", "Semester", "Credits", "Exam Weight (%)", "Selected"]].to_html(index=False), unsafe_allow_html=True)
+        
+        # st.write("Optional modules (Autumn Semester)",optMods[optMods["Semester"]=="SEM1"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
     else:
         st.write("You have no optional selections to make for Autumn semester")
         optModSelCodeSEM1=[]
     optCreditSelSEM1=optMods[optMods["Module Code"].isin(optModSelCodeSEM1)]["Credits"].sum()
     autumnCredits=optCreditSelSEM1 + coreCreditsAutumn
     nExamsAutumn=nExamsAutumnCore + len(optMods[(optMods["Module Code"].isin(optModSelCodeSEM1))&(optMods["Exam Weight (%)"]>0)])
-    st.write("Autumn semester credits:",int(autumnCredits))
-    st.write("Autumn semester exams:", nExamsAutumn)
+    # st.write("Autumn semester credits:",int(autumnCredits))
+    # st.write("Autumn semester exams:", nExamsAutumn)
     
 
     # Select Spring modules
+    st.write("**Spring Semester**")
     optModsSEM2 = optMods[optMods["Semester"]=="SEM2"]
     optModListSEM2_display = [f"{row['Module Code']} - {row['Module Title']}" for _, row in optModsSEM2.iterrows()]
     optModListSEM2_display.sort()  # Sort alphabetically by the display string
     optModListSEM2_codes = [item.split(" - ")[0] for item in optModListSEM2_display]  # Extract codes
-    st.write("Core module credits (Spring):", int(coreCreditsSpring))
+    # st.write("Core module credits (Spring):", int(coreCreditsSpring))
     if len(optModListSEM2_display)>0:
-        st.write("Optional modules (Spring Semester)",optMods[optMods["Semester"]=="SEM2"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
         if showAllMods:
             optModSelCodeSEM2=optModListSEM2_codes
             st.write("**Selecting all Spring semester optional modules**")
         else:
             selected_display=st.multiselect("Select your Spring Semester optional modules:",optModListSEM2_display)
             optModSelCodeSEM2 = [item.split(" - ")[0] for item in selected_display]  # Extract codes from selection
+            
+        optMods_display = optMods.copy()
+        optMods_display["Selected"] = optMods_display["Module Code"].isin(optModSelCodeSEM2).map({True: "✔️", False: ""})
+        optMods_display["Exam Weight (%)"] = optMods_display["Exam Weight (%)"].astype(int)  # Make integer
+        st.write(optMods_display[optMods_display["Semester"]=="SEM2"][["Module Code", "Module Title", "Semester", "Credits", "Exam Weight (%)", "Selected"]].to_html(index=False), unsafe_allow_html=True)
+        # st.write("**Spring Semester**",optMods[optMods["Semester"]=="SEM2"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
     else:
         optModSelCodeSEM2=[]
 
     optCreditSelSEM2=optMods[optMods["Module Code"].isin(optModSelCodeSEM2)]["Credits"].sum()
     springCredits=optCreditSelSEM2 + coreCreditsSpring
     nExamsSpring=nExamsSpringCore + len(optMods[(optMods["Module Code"].isin(optModSelCodeSEM2))&(optMods["Exam Weight (%)"]>0)])
-    st.write("Spring semester credits:",int(springCredits))
-    st.write("Spring semester exams:", nExamsSpring)
+    # st.write("Spring semester credits:",int(springCredits))
+    # st.write("Spring semester exams:", nExamsSpring)
     optModSelCode = optModSelCodeSEM1 + optModSelCodeSEM2
 optModSel=optMods[optMods["Module Code"].isin(optModSelCode)]        
 optCreditSel=optMods[optMods["Module Code"].isin(optModSelCode)]["Credits"].sum()
@@ -201,17 +238,25 @@ autumnCredits=int(selMod[selMod["Semester"]=="SEM1"]["Credits"].sum()+selMod[sel
 springCredits=int(selMod[selMod["Semester"]=="SEM2"]["Credits"].sum()+selMod[selMod["Semester"]=="SEMD"]["Credits"].sum()/2)
 selCredits=autumnCredits + springCredits
 
+st.subheader("**Selected credits**")
+all_credits_df = pd.DataFrame({
+    "Semester": ["Autumn", "Spring"],
+    "Credits": [autumnCredits, springCredits],
+    "# Exams": [nExamsAutumn, nExamsSpring]
+})
+st.write(all_credits_df.to_html(index=False),unsafe_allow_html=True)
+
 if not showAllMods:
     if optCreditSel<optCreditsAvail:
-        st.write(f"Please select {optCreditsAvail-optCreditSel} more credits.")
+        st.error(f"⚠️ Please select {optCreditsAvail-optCreditSel} more optional credits.")
+        st.stop()
     elif optCreditSel>optCreditsAvail:
-        st.write(f"⚠️ ERROR: You can only select {optCreditsAvail} credits. {optCreditSel} selected")
+        st.error(f"⚠️ ERROR: You can only select {optCreditsAvail} optional credits. {optCreditSel} selected")
         st.stop()
     else:
         st.write("👍 All credits selected.")
         if autumnCredits>70 or springCredits>70:
             st.error("⚠️ WARNING: Module choice is unbalanced between semesters")
-    
 
 
 # st.divider()
