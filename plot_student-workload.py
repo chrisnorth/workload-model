@@ -238,6 +238,8 @@ selModList=optModSelCode + coreModList
 selMod=Modules[Modules["Module Code"].isin(selModList)].rename(columns={colName:"Core/Optional"})
 autumnCredits=int(selMod[selMod["Semester"]=="SEM1"]["Credits"].sum()+selMod[selMod["Semester"]=="SEMD"]["Credits"].sum()/2)
 springCredits=int(selMod[selMod["Semester"]=="SEM2"]["Credits"].sum()+selMod[selMod["Semester"]=="SEMD"]["Credits"].sum()/2)
+nExamsAutumn=len(selMod[(selMod["Semester"]=="SEM1")&(selMod["Exam Weight (%)"]>0)])
+nExamsSpring=len(selMod[(selMod["Semester"]=="SEM2")&(selMod["Exam Weight (%)"]>0)])
 selCredits=autumnCredits + springCredits
 
 if not showAllMods and not showAllProgs:
