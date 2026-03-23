@@ -28,6 +28,9 @@ def streamlit_cloud():
 # st.write('pandas',pd.__version__)
 # st.write('streamlit',st.__version__)
 
+params = st.query_params
+dev_mode = params.get("dev") == "1"
+
 def year2level(year,yrtype="UG"):
     if yrtype=="PG":
         return 7
@@ -35,13 +38,16 @@ def year2level(year,yrtype="UG"):
         return year+3
 
 # Set student properties
-if streamlit_cloud():
-    # st.info('Running on streamlit cloud.')
-    academicYears=["2025/6"]
-else:
+if not streamlit_cloud() or dev_mode:
     st.info('Running locally')
-    academicYears=["2025/6","2024/5","2026/7 (TBC)"]
-    # academicYears=["2025/6"]
+    academicYears=["2025/6","2026/7 (Draft)"]
+    if dev_mode:
+        st.warning("Developer mode enabled")
+    else:
+        st.warning("Local mode enabled")
+    # academicYears=["2025/6"]# st.info('Running on streamlit cloud.')
+else:
+     academicYears=["2025/6"]
 
 easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":7}
 startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (TBC)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
