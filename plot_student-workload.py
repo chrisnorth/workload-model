@@ -110,6 +110,12 @@ try:
         coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
 except:
     st.error(f"ERROR reading data for {studentCourseType} {studentCourse} from {academicYear}")
+    if showAllProgs:
+        coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+    else:
+        coreMods=Modules[(Modules[colName]=="C")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
     st.stop()
 
 coreModList=coreMods["Module Code"].to_list()
