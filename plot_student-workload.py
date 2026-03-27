@@ -49,9 +49,9 @@ if not streamlit_cloud() or dev_mode:
 else:
      academicYears=["2025/6"]
 
-easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (TBC)":7}
-startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (TBC)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
-filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (TBC)":"AssessmentSchedule_2627.xlsx"}
+easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (Draft)":7}
+startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (Draft)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
+filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (Draft)":"AssessmentSchedule_2627.xlsx"}
 coursetypes=["UG","PG"]
 courses={"UG":["Show modules for all programmes","Physics","Astrophysics","Physics with Astronomy","Medical Physics"],
          "PG":["Show modules for all programmes","Physics", "Astrophysics", "Data Intensive Physics", "Data Intensive Astrophysics","Compound Semiconductor Physics","CDT Compound Semiconductor Physics"]}
@@ -67,7 +67,7 @@ columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronom
 
 
 st.header("Select your year and course")
-academicYear = st.radio("Select the academic year:",academicYears,index=0)
+academicYear = st.radio("Select the academic year:",academicYears,index=1)
 studentCourseType = st.radio("Select your programme type:",coursetypes)
 if studentCourseType=="UG":
     studentYear = st.radio("Select your year of study:",years)
