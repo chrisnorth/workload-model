@@ -771,7 +771,7 @@ for s,sem in enumerate(semesters):
 
 def weight2sizecolorlabel(w,portfolio=False):
     if w<-0.1:
-        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey','alpha':0}
+        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey','alpha':1}
         # return {'ms':0  ,'ec':'orange','lw':0,'fc':'yellow','lab':'','textcol':'white','alpha':0}
     elif w<0:
         return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey','alpha':1}
