@@ -39,12 +39,12 @@ def year2level(year,yrtype="UG"):
 
 # Set student properties
 if not streamlit_cloud() or dev_mode:
-    st.info('Running locally')
+    # st.info('Running locally')
     academicYears=["2025/6","2026/7 (Draft)"]
     if dev_mode:
         st.warning("Developer mode enabled")
-    else:
-        st.warning("Local mode enabled")
+    if not streamlit_cloud():
+        st.info("Running locally")
     # academicYears=["2025/6"]# st.info('Running on streamlit cloud.')
 else:
      academicYears=["2025/6"]
@@ -410,10 +410,10 @@ for a,assess in AssessDates.iterrows():
     for wA in range(len(AutumnWeeks)):
         weekA=AutumnWeeks[wA]
         assessTime = assess[weekA] * modCredits*4
+        assessWeeks = assess["Duration"]
         if assessTime>0:
             if np.isfinite(assess["Hours"]):
                 assessTime = assess["Hours"]
-            assessWeeks = assess["Duration"]
             wR=np.arange(wA-assessWeeks,wA,dtype=int)+1
             wX0=np.min(wR)
 
@@ -475,10 +475,10 @@ for a,assess in AssessDates.iterrows():
         weekS=SpringWeeks[wS]
         # if AssessDates.loc[a,"Hours"]
         assessTime = assess[weekS] * modCredits*4
+        assessWeeks = assess["Duration"]
         if assessTime>0:
             if np.isfinite(assess["Hours"]):
                 assessTime = assess["Hours"]
-            assessWeeks = assess["Duration"]
             wR=np.arange(wS-assessWeeks,wS,dtype=int)+1
             wX0=np.min(wR)
 
