@@ -41,6 +41,7 @@ def year2level(year,yrtype="UG"):
 if not streamlit_cloud() or dev_mode:
     # st.info('Running locally')
     academicYears=["2025/6","2026/7 (Draft)"]
+    defYear=1
     if dev_mode:
         st.warning("Developer mode enabled")
     if not streamlit_cloud():
@@ -48,6 +49,7 @@ if not streamlit_cloud() or dev_mode:
     # academicYears=["2025/6"]# st.info('Running on streamlit cloud.')
 else:
      academicYears=["2025/6"]
+     defYear=0
 
 easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (Draft)":7}
 startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (Draft)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
@@ -67,7 +69,7 @@ columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronom
 
 
 st.header("Select your year and course")
-academicYear = st.radio("Select the academic year:",academicYears,index=1)
+academicYear = st.radio("Select the academic year:",academicYears,index=defYear)
 studentCourseType = st.radio("Select your programme type:",coursetypes)
 if studentCourseType=="UG":
     studentYear = st.radio("Select your year of study:",years)
