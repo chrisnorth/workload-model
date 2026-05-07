@@ -463,6 +463,7 @@ for a,assess in AssessDates.iterrows():
                     if assCore:
                         profileAssessCore["Autumn"][wX] = profileAssessCore["Autumn"][wX] + assessTime*(2*(wX-wX0+1)-1)/assessWeeks**2
         elif assessTime<0:
+            hasOldDeadline=True
             if not mod in dlGrid["Autumn"]:
                 dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
             if assSum=="Y" or assSum=="N":
@@ -773,10 +774,10 @@ for s,sem in enumerate(semesters):
 
 def weight2sizecolorlabel(w,portfolio=False):
     if w<-0.1:
-        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey','alpha':1}
+        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"25/26 deadline",'textcol':'grey','alpha':1}
         # return {'ms':0  ,'ec':'orange','lw':0,'fc':'yellow','lab':'','textcol':'white','alpha':0}
     elif w<0:
-        return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"24/25 deadline",'textcol':'grey','alpha':1}
+        return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"25/26 deadline",'textcol':'grey','alpha':1}
         # return {'ms':0,'ec':'orange','lw':0,'fc':'yellow','lab':"",'textcol':'white','alpha':0}
     elif w==0:
         return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'grey','alpha':1}
