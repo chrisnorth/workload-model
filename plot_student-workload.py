@@ -9,6 +9,10 @@ import matplotlib.patches as mpatches
 import streamlit as st
 import os
 from datetime import datetime, timedelta
+import warnings
+
+# Suppress openpyxl conditional formatting warning
+warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 
 def streamlit_cloud():
     """
@@ -30,6 +34,7 @@ def streamlit_cloud():
 
 params = st.query_params
 dev_mode = params.get("dev") == "1"
+dev_mode2 = params.get("dev") == "2"
 
 def year2level(year,yrtype="UG"):
     if yrtype=="PG":
@@ -40,8 +45,11 @@ def year2level(year,yrtype="UG"):
 # Set student properties
 if not streamlit_cloud() or dev_mode:
     # st.info('Running locally')
-    academicYears=["2025/6","2026/7 (Draft)"]
-    defYear=1
+    academicYears=["2025/6","2026/7 (Draft)","2026/7 (Proposed)"]
+    if dev_mode==2:
+        defYear=2
+    else:
+        defYear=1
     if dev_mode:
         st.warning("Developer mode enabled")
     if not streamlit_cloud():
@@ -51,9 +59,9 @@ else:
      academicYears=["2025/6"]
      defYear=0
 
-easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (Draft)":7}
-startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (Draft)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
-filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (Draft)":"AssessmentSchedule_2627.xlsx"}
+easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (Draft)":7,"2026/7 (Proposed)":7}
+startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (Draft)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)},"2026/7 (Proposed)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
+filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (Draft)":"AssessmentSchedule_2627.xlsx", "2026/7 (Proposed)":"AssessmentSchedule_2627_v2.xlsx"}
 coursetypes=["UG","PG"]
 courses={"UG":["Show modules for all programmes","Physics","Astrophysics","Physics with Astronomy","Medical Physics"],
          "PG":["Show modules for all programmes","Physics", "Astrophysics", "Data Intensive Physics", "Data Intensive Astrophysics","Compound Semiconductor Physics","CDT Compound Semiconductor Physics"]}
@@ -340,10 +348,10 @@ ContactTimeIn = pd.concat([ContactTimeIn, msc_contact], ignore_index=True)
 # AssessDates.to_excel("assessments_with_msc_duplicates.xlsx", index=False)
 
 # Reduce to list of selected modules
-AssessDates=AssessDatesAll[AssessDatesAll["Module Code"].isin(selModList)]
+AssessDates=AssessDatesAll[AssessDatesAll["Module Code"].isin(selModList)].copy()
 inCore=AssessDates["Module Code"].isin(coreModList)
 AssessDates.loc[inCore,"Core"]=True
-ContactTime=ContactTimeIn[ContactTimeIn["Module Code"].isin(selModList)]
+ContactTime=ContactTimeIn[ContactTimeIn["Module Code"].isin(selModList)].copy()
 
 hasDays="Day of Week" in AssessDates.columns
 
@@ -398,6 +406,7 @@ for wS,weekS in enumerate(SpringWeeks):
     if conTime>0:
         profileContact["Spring"][wS] = profileContact["Spring"][wS] + conTime
 
+subweekLookup={"Mo":-0.3,"Tu":-0.15,"We":0,"Th":0.15,"Fr":0,"TBC":0,"?":0}
 for a,assess in AssessDates.iterrows():
     mod = assess["Module Code"]
     modCredits = Modules["Credits"][Modules["Module Code"]==mod].values[0]
@@ -434,8 +443,9 @@ for a,assess in AssessDates.iterrows():
             ### add to deadlines grid for that assessment
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Autumn"][mod]["grid"]:
-                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
+                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[],"weekDay":[]}
                 dlGrid["Autumn"][mod]["grid"][a]["weeks"].append(wA+1)
+                dlGrid["Autumn"][mod]["grid"][a]["weekDay"].append(wA+1+subweekLookup.get(assessDay,0))
             if assSum=="Y":
                 dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
             elif assSum=="N":
@@ -468,8 +478,9 @@ for a,assess in AssessDates.iterrows():
                 dlGrid["Autumn"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Autumn"][mod]["grid"]:
-                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
+                    dlGrid["Autumn"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[],"weekDay":[]}
                 dlGrid["Autumn"][mod]["grid"][a]["weeks"].append(wA+1)
+                dlGrid["Autumn"][mod]["grid"][a]["weekDay"].append(wA+1+subweekLookup.get(assessDay,0))
             if assSum=="Y":
                 dlGrid["Autumn"][mod]["grid"][a]["weights"].append(assess[weekA])
             elif assSum=="N":
@@ -500,8 +511,9 @@ for a,assess in AssessDates.iterrows():
             ### add to deadlines grid for that assessment
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Spring"][mod]["grid"]:
-                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
+                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[],"weekDay":[]}
                 dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
+                dlGrid["Spring"][mod]["grid"][a]["weekDay"].append(wS+1+subweekLookup.get(assessDay,0))
             if assSum=="Y":
                 dlGrid["Spring"][mod]["grid"][a]["weights"].append(assess[weekS])
             elif assSum=="N":
@@ -532,8 +544,9 @@ for a,assess in AssessDates.iterrows():
                 dlGrid["Spring"][mod]={"grid":{},"semester":Modules["Semester"][Modules["Module Code"]==mod].values[0]}
             if assSum=="Y" or assSum=="N":
                 if not a in dlGrid["Spring"][mod]["grid"]:
-                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[]}
+                    dlGrid["Spring"][mod]["grid"][a]={"type":assessType,"name":assessName,"duration":assessWeeks,"day":assessDay,"weeks":[],"weights":[],"weekDay":[]}
                 dlGrid["Spring"][mod]["grid"][a]["weeks"].append(wS+1)
+                dlGrid["Spring"][mod]["grid"][a]["weekDay"].append(wS+1+subweekLookup.get(assessDay,0))
             if assSum=="Y":
                 dlGrid["Spring"][mod]["grid"][a]["weights"].append(assess[weekS])
             elif assSum=="N":
@@ -774,21 +787,21 @@ for s,sem in enumerate(semesters):
 
 def weight2sizecolorlabel(w,portfolio=False):
     if w<-0.1:
-        return {'ms':100,'ec':'orange','lw':0,'fc':'yellow','lab':"25/26 deadline",'textcol':'grey','alpha':1}
+        return {'ms':100,'barw':5,'ec':'orange','lw':0,'fc':'yellow','lab':"Prev. deadline",'textcol':'grey','alpha':1}
         # return {'ms':0  ,'ec':'orange','lw':0,'fc':'yellow','lab':'','textcol':'white','alpha':0}
     elif w<0:
-        return {'ms':30,'ec':'orange','lw':0,'fc':'yellow','lab':"25/26 deadline",'textcol':'grey','alpha':1}
+        return {'ms':30,'barw':3,'ec':'orange','lw':0,'fc':'yellow','lab':"Prev. deadline",'textcol':'grey','alpha':1}
         # return {'ms':0,'ec':'orange','lw':0,'fc':'yellow','lab':"",'textcol':'white','alpha':0}
     elif w==0:
-        return {'ms':25,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'grey','alpha':1}
+        return {'ms':25,'barw':2.5,'ec':'grey','lw':1,'fc':'white','lab':"Formative",'textcol':'grey','alpha':1}
     elif w<=0.05:
-        return {'ms':25,'ec':'blue','lw':1,'fc':'white','lab':"<5%",'textcol':'black','alpha':1}
+        return {'ms':25,'barw':2.5,'ec':'blue','lw':1,'fc':'white','lab':"<5%",'textcol':'black','alpha':1}
     elif w<=0.1:
-        return {'ms':30,'ec':'green','lw':0,'fc':'green','lab':"5-10%",'textcol':'black','alpha':1}
+        return {'ms':30,'barw':3,'ec':'green','lw':0,'fc':'green','lab':"5-10%",'textcol':'black','alpha':1}
     elif w<=0.3:
-        return {'ms':80,'ec':'red','lw':1,'fc':'white','lab':"10-30%",'textcol':'black','alpha':1}
+        return {'ms':80,'barw':5,'ec':'red','lw':1,'fc':'white','lab':"10-30%",'textcol':'black','alpha':1}
     else:
-        return {'ms':100,'ec':'red','lw':0,'fc':'red','lab':">30%",'textcol':'black','alpha':1}
+        return {'ms':100,'barw':5,'ec':'red','lw':0,'fc':'red','lab':">30%",'textcol':'black','alpha':1}
     
 assessSeen={"Autumn":set(),"Spring":set()}
 handles={}
@@ -813,9 +826,11 @@ for s,sem in enumerate(semesters):
                 aName="CA"
             color=assessColours[list(assessTypes).index(aType)]
             yass=m-0.5+(a+1)/(nassess+1)
+            ytxt=yass-0.1
             yplot=[yass]*len(dlGrid[sem][mod]["grid"][an]["weeks"])
             weights=dlGrid[sem][mod]["grid"][an]["weights"]
             sizes=[]
+            barws=[]
             alphas=[]
             edgecolors=[]
             facecolors=[]
@@ -824,6 +839,7 @@ for s,sem in enumerate(semesters):
             textcols=[]
             for w,wt in enumerate(weights):
                 sizes.append(weight2sizecolorlabel(wt)["ms"])
+                barws.append(weight2sizecolorlabel(wt)["barw"])
                 alphas.append(weight2sizecolorlabel(wt)["alpha"])
                 edgecolors.append(weight2sizecolorlabel(wt)["ec"])
                 facecolors.append(weight2sizecolorlabel(wt)["fc"])
@@ -835,17 +851,17 @@ for s,sem in enumerate(semesters):
             #             edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
             if hasDays:
                 for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
-                    if dlGrid[sem][mod]["grid"][an]["day"]==" " or dlGrid[sem][mod]["grid"][an]["day"]=="":
-                        axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w],yplot[w],s=np.array(sizes)[w],
-                            edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w],alpha=alphas[w])
-                    else:
-                        axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w]-0.25,yplot[w],s=np.array(sizes)[w],
-                            edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w],alpha=alphas[w])
-                        axG.text(week-0.15*(1-sizes[w]/100),yass,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",
+                    if weights[w]>=0:
+                        axG.plot([dlGrid[sem][mod]["grid"][an]["weekDay"][w]-dlGrid[sem][mod]["grid"][an]["duration"]+0.25,dlGrid[sem][mod]["grid"][an]["weekDay"][w]-0.02*np.sqrt(sizes[w])],[yass,yass],
+                            color=edgecolors[w],alpha=alphas[w]*0.25,linewidth=np.array(barws)[w])
+                    axG.scatter(dlGrid[sem][mod]["grid"][an]["weekDay"][w],yplot[w],s=np.array(sizes)[w],
+                        edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w],alpha=alphas[w])
+                    if not dlGrid[sem][mod]["grid"][an]["day"] in [""," ","N/A",np.nan] and weights[w]>0:
+                        axG.text(dlGrid[sem][mod]["grid"][an]["weekDay"][w]+0.2-0.15*(1-sizes[w]/100),ytxt,dlGrid[sem][mod]["grid"][an]["day"],ha="left",va="center_baseline",
                             fontsize=8,color=textcols[w],alpha=alphas[w])
             else:
                  for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
-                    axG.scatter(dlGrid[sem][mod]["grid"][an]["weeks"][w],yplot[w],s=np.array(sizes)[w],
+                    axG.scatter(dlGrid[sem][mod]["grid"][an]["weekDay"][w],yplot[w],s=np.array(sizes)[w],
                         edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w],alpha=alphas[w])
             yticks.append(yass)
             ylabels.append(aName)
