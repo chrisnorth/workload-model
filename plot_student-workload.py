@@ -47,6 +47,20 @@ def year2level(year,yrtype="UG"):
     else:
         return year+3
 
+if "year" in params:
+    try:
+        defStudentYear = int(params.get("year"))
+    except (ValueError, TypeError):
+        st.warning('unable to convert "year" parameter to integer, setting to 1')
+        defStudentYear = 1
+else:
+    defStudentYear = 1
+
+if "type" in params:
+    defStudentType = params.get("type")
+else:
+    defStudentType = "UG"
+
 # Set student properties
 if not streamlit_cloud() or dev_mode>0:
     # st.info('Running locally')
@@ -83,9 +97,9 @@ columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronom
 
 st.header("Select your year and course")
 academicYear = st.radio("Select the academic year:",academicYears,index=defYear)
-studentCourseType = st.radio("Select your programme type:",coursetypes)
+studentCourseType = st.radio("Select your programme type:",coursetypes,index=coursetypes.index(defStudentType))
 if studentCourseType=="UG":
-    studentYear = st.radio("Select your year of study:",years)
+    studentYear = st.radio("Select your year of study:",years,index=years.index(defStudentYear))
 else:
     studentYear=1
 studentCourse = st.radio("Select your programme:",courses[studentCourseType])
