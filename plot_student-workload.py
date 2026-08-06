@@ -35,7 +35,11 @@ def streamlit_cloud():
 params = st.query_params
 
 dev_mode = params.get("dev") if "dev" in params else 0
-
+try:
+    dev_mode = int(dev_mode)
+except (ValueError, TypeError):
+    st.warning('unable to convert "dev" parameter to integer, setting to 0')
+    dev_mode = 0
 
 def year2level(year,yrtype="UG"):
     if yrtype=="PG":
