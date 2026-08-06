@@ -33,8 +33,9 @@ def streamlit_cloud():
 # st.write('streamlit',st.__version__)
 
 params = st.query_params
-dev_mode = params.get("dev") == "1"
-dev_mode2 = params.get("dev") == "2"
+
+dev_mode = params.get("dev") if "dev" in params else 0
+
 
 def year2level(year,yrtype="UG"):
     if yrtype=="PG":
@@ -43,14 +44,14 @@ def year2level(year,yrtype="UG"):
         return year+3
 
 # Set student properties
-if not streamlit_cloud() or dev_mode:
+if not streamlit_cloud() or dev_mode>0:
     # st.info('Running locally')
     academicYears=["2025/6","2026/7 (Draft)","2026/7 (Proposed)"]
     if dev_mode==2:
         defYear=2
     else:
         defYear=1
-    if dev_mode:
+    if dev_mode>0:
         st.warning("Developer mode enabled")
     if not streamlit_cloud():
         st.info("Running locally")
