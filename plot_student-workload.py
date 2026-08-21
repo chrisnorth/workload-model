@@ -94,7 +94,7 @@ columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronom
                "Show modules for all programmes":"AllPG"}}
 
 
-
+st.info("*This tool is designed to help students visualise their deadlines workload over the academic year. If any information here contracticts SIMS or Learning Central, then SIMS or Learning Central should be considered to be correct. In such cases, please contact the Module Organiser or Dr Chris North (Director of Undergraduate Studies).*")
 st.header("Select your year and course")
 academicYear = st.radio("Select the academic year:",academicYears,index=defYear)
 studentCourseType = st.radio("Select your programme type:",coursetypes,index=coursetypes.index(defStudentType))
