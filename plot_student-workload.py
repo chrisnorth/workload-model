@@ -62,9 +62,9 @@ else:
     defStudentType = "UG"
 
 # Set student properties
-if not streamlit_cloud() or dev_mode>0:
+if (not streamlit_cloud() and dev_mode!=-1) or dev_mode>0:
     # st.info('Running locally')
-    academicYears=["2025/6","2026/7 (Draft)","2026/7 (Proposed)"]
+    academicYears=["2025/6","2026/7","2026/7 (Proposed)"]
     if dev_mode==2:
         defYear=2
     else:
@@ -75,12 +75,12 @@ if not streamlit_cloud() or dev_mode>0:
         st.info("Running locally")
     # academicYears=["2025/6"]# st.info('Running on streamlit cloud.')
 else:
-     academicYears=["2025/6"]
+     academicYears=["2026/7"]
      defYear=0
 
-easterWeeks={"2024/5":11,"2025/6":8,"2026/7 (Draft)":7,"2026/7 (Proposed)":7}
-startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7 (Draft)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)},"2026/7 (Proposed)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
-filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx","2026/7 (Draft)":"AssessmentSchedule_2627.xlsx", "2026/7 (Proposed)":"AssessmentSchedule_2627_v2.xlsx"}
+easterWeeks={"2024/5":11,"2025/6":8,"2026/7":7,"2026/7 (Proposed)":7}
+startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)},"2026/7 (Proposed)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
+filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx", "2026/7":"AssessmentSchedule_2627.xlsx", "2026/7 (Proposed)":"AssessmentSchedule_2627_v2.xlsx"}
 coursetypes=["UG","PG"]
 courses={"UG":["Show modules for all programmes","Physics","Astrophysics","Physics with Astronomy","Medical Physics"],
          "PG":["Show modules for all programmes","Physics", "Astrophysics", "Data Intensive Physics", "Data Intensive Astrophysics","Compound Semiconductor Physics","CDT Compound Semiconductor Physics"]}
@@ -821,6 +821,9 @@ def weight2sizecolorlabel(w,portfolio=False):
         return {'ms':80,'barw':5,'ec':'red','lw':1,'fc':'white','lab':"10-30%",'textcol':'black','alpha':1}
     else:
         return {'ms':100,'barw':5,'ec':'red','lw':0,'fc':'red','lab':">30%",'textcol':'black','alpha':1}
+
+def should_plot_weight(weight):
+    return (dev_mode > 0) or (weight >= 0)
     
 assessSeen={"Autumn":set(),"Spring":set()}
 handles={}
@@ -870,6 +873,8 @@ for s,sem in enumerate(semesters):
             #             edgecolor=edgecolors,facecolor=facecolors,linewidth=linewidths)
             if hasDays:
                 for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
+                    if not should_plot_weight(weights[w]):
+                        continue
                     if weights[w]>=0:
                         axG.plot([dlGrid[sem][mod]["grid"][an]["weekDay"][w]-dlGrid[sem][mod]["grid"][an]["duration"]+0.25,dlGrid[sem][mod]["grid"][an]["weekDay"][w]-0.02*np.sqrt(sizes[w])],[yass,yass],
                             color=edgecolors[w],alpha=alphas[w]*0.25,linewidth=np.array(barws)[w])
@@ -880,6 +885,8 @@ for s,sem in enumerate(semesters):
                             fontsize=8,color=textcols[w],alpha=alphas[w])
             else:
                  for w,week in enumerate(dlGrid[sem][mod]["grid"][an]["weeks"]):
+                    if not should_plot_weight(weights[w]):
+                        continue
                     axG.scatter(dlGrid[sem][mod]["grid"][an]["weekDay"][w],yplot[w],s=np.array(sizes)[w],
                         edgecolor=edgecolors[w],facecolor=facecolors[w],linewidth=linewidths[w],alpha=alphas[w])
             yticks.append(yass)
@@ -939,8 +946,11 @@ for s,sem in enumerate(semesters):
     axGy.tick_params(axis="both",length=0)
     
     # Create manual legend
-    if hasOldDeadline:
-        legendWeights=[-0.5,0,0.05,0.1,0.3,0.5]
+    if dev_mode > 0:
+        if hasOldDeadline:
+            legendWeights=[-0.5,0,0.05,0.1,0.3,0.5]
+        else:
+            legendWeights=[0,0.05,0.1,0.3,0.5]
     else:
         legendWeights=[0,0.05,0.1,0.3,0.5]
     legendMarkers=[]
