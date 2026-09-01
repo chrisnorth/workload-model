@@ -103,6 +103,8 @@ if studentCourseType=="UG":
 else:
     studentYear=1
 studentCourse = st.radio("Select your programme:",courses[studentCourseType])
+if academicYear=="2026/7" and studentCourseType == "UG" and studentYear==1 and studentCourse=="Physics with Astronomy":
+    st.error("**WARNING:** Physics with Astronomy programmes are not available to new students from 2026/7 onwards.")
 studentLevel=year2level(studentYear,studentCourseType)
 
 if studentYear==4 and studentCourse=="Medical Physics":
@@ -132,23 +134,38 @@ fileIn=filenames[academicYear]
 Modules=pd.read_excel(fileIn,"Modules")
 try:
     if showAllProgs:
-        coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
-        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+        coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)&(Modules["Parent"].isna())]
+        coreModsAll=coreMods[coreMods[colName].str.startswith("C",na=False)]["Module Code"].to_list()
     else:
-        coreMods=Modules[(Modules[colName]=="C")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
-        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+        coreMods=Modules[(Modules[colName].str.startswith("C",na=False))&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        coreModsAll=coreMods[coreMods[colName].str.startswith("C",na=False)]["Module Code"].to_list()
 except:
     st.error(f"ERROR reading data for {studentCourseType} {studentCourse} from {academicYear}")
     if showAllProgs:
-        coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
-        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+        coreMods=Modules[(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)&(Modules["Parent"].isna())]
+        coreModsAll=coreMods[coreMods[colName].str.startswith("C",na=False)]["Module Code"].to_list()
     else:
-        coreMods=Modules[(Modules[colName]=="C")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
-        coreModsAll=coreMods[coreMods[colName]=="C"]["Module Code"].to_list()
+        coreMods=Modules[(Modules[colName].str.startswith("C",na=False))&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+        coreModsAll=coreMods[coreMods[colName].str.startswith("C",na=False)]["Module Code"].to_list()
     st.stop()
 
 coreModList=coreMods["Module Code"].to_list()
 selModList=coreModList
+
+# Footnote markers (e.g. "O [1]") reference a footnote text stored in its own row,
+# where Module Code is the marker itself (e.g. "[1]") and Module Title is the footnote text
+footnotePattern=r'(\[.*?\])'
+footnoteTextLookup=Modules.drop_duplicates("Module Code").set_index("Module Code")["Module Title"]
+def getFootnotes(modsSubset):
+    rows=modsSubset[modsSubset[colName].str.contains(r'\[.*?\]',regex=True,na=False)][[colName,"Module Code"]].copy()
+    rows["Footnote"]=rows[colName].str.extract(footnotePattern)
+    fn=rows.groupby("Footnote")["Module Code"].apply(lambda x: ", ".join(x)).reset_index().rename(columns={"Module Code":"Modules"})
+    fn["Text"]=fn["Footnote"].map(footnoteTextLookup)
+    return fn
+def displayCols(df,baseCols):
+    # Only include the Notes column in a table if it actually has footnote markers
+    return baseCols+["Notes"] if df["Notes"].ne("").any() else baseCols
+coreFootnotes=getFootnotes(coreMods)
 
 coreCredits=coreMods["Credits"].sum()
 coreCreditsAutumn=coreMods[coreMods["Semester"]=="SEM1"]["Credits"].sum()+coreMods[coreMods["Semester"]=="SEMD"]["Credits"].sum()/2
@@ -158,7 +175,7 @@ nExamsAutumnCore=len(coreMods[(coreMods["Semester"]=="SEM1")&(coreMods["Exam Wei
 nExamsSpringCore=len(coreMods[(coreMods["Semester"]=="SEM2")&(coreMods["Exam Weight (%)"]>0)])
 
 optCreditsAvail=120-coreCredits
-optMods=Modules[(Modules[colName]=="O")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
+optMods=Modules[(Modules[colName].str.startswith("O",na=False))&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
         
 st.divider()
 st.header("Module Selection")
@@ -176,10 +193,17 @@ if not showAllProgs and not showAllMods:
     coreMods_display = coreMods.copy()
     coreMods_display["Semester"] = coreMods_display["Semester"].replace({"SEM1": "Autumn", "SEM2": "Spring", "SEMD": "Full Year"})
     coreMods_display["Exam Weight (%)"] = coreMods_display["Exam Weight (%)"].astype(int)  # Make integer
+    coreMods_display["Credits"] = coreMods_display["Credits"].astype(int)  # Make integer
+    coreMods_display["Notes"] = coreMods_display[colName].str.extract(footnotePattern).fillna("")
 
-    st.write(coreMods_display[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+    
+    st.write(coreMods_display[displayCols(coreMods_display,["Module Code","Module Title","Semester","Credits","Exam Weight (%)"])].to_html(index=False),unsafe_allow_html=True)
     # st.write("_SEM1=Autumn, SEM2=Spring, SEMD=Full Year_")
-
+    if not coreFootnotes.empty:
+        # st.subheader("Notes")
+        for _row in coreFootnotes.itertuples():
+            st.info(f"**{_row.Footnote}**: {_row.Text}")
+    
     # Create a DataFrame for display
     core_credits_df = pd.DataFrame({
         "Semester": ["Autumn", "Spring"],
@@ -192,12 +216,22 @@ if not showAllProgs and not showAllMods:
     st.write(core_credits_df.to_html(index=False),unsafe_allow_html=True)
 
 if showAllProgs:
-    st.write("Available modules are:",coreMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+    coreMods_display = coreMods.copy()
+    coreMods_display["Exam Weight (%)"] = coreMods_display["Exam Weight (%)"].astype(int)  # Make integer
+    coreMods_display["Credits"] = coreMods_display["Credits"].astype(int)  # Make integer
+    coreMods_display["Notes"] = coreMods_display[colName].str.extract(footnotePattern).fillna("")
+    st.write("Available modules are:",coreMods_display[displayCols(coreMods_display,["Module Code","Module Title","Semester","Credits","Exam Weight (%)"])].to_html(index=False),unsafe_allow_html=True)
+    if not coreFootnotes.empty:
+        # st.subheader("Notes")
+        for _row in coreFootnotes.itertuples():
+            st.info(f"**{_row.Footnote}**: {_row.Text}")
     st.write("Selecting all modules for all programmes")
     showAllMods=True
     optModSelCode=[]
 elif coreCredits==120:
-    st.write("Your core modules are:",coreMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+    coreMods_display = coreMods.copy()
+    coreMods_display["Notes"] = coreMods_display[colName].str.extract(footnotePattern).fillna("")
+    st.write("Your core modules are:",coreMods_display[displayCols(coreMods_display,["Module Code","Module Title","Semester","Credits","Exam Weight (%)"])].to_html(index=False),unsafe_allow_html=True)
     st.write("You have no optional selections to make.")
     showAllMods=False
     optModSelCode=[]
@@ -210,8 +244,7 @@ else:
     st.write("Please consult SIMS, and the Module Catalogue for any further conditions of module selection.")
     # st.write("Optional modules",optMods[["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
     
-    optMods=Modules[(Modules[colName]=="O")&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
-    
+    optMods=Modules[(Modules[colName].str.startswith("O",na=False))&(Modules["Level"]==studentLevel)&(Modules["Source"]==studentCourseType[0])&(Modules["Credits"]>0)]
 
     # Select Autumn modules
     optModsSEM1 = optMods[optMods["Semester"]=="SEM1"]
@@ -232,8 +265,15 @@ else:
         optMods_display = optMods.copy()
         optMods_display["Selected"] = optMods_display["Module Code"].isin(optModSelCodeSEM1).map({True: "✔️", False: ""})
         optMods_display["Exam Weight (%)"] = optMods_display["Exam Weight (%)"].astype(int)  # Make integer
-        st.write(optMods_display[optMods_display["Semester"]=="SEM1"][["Module Code", "Module Title", "Semester", "Credits", "Exam Weight (%)", "Selected"]].to_html(index=False), unsafe_allow_html=True)
+        optMods_display["Credits"] = optMods_display["Credits"].astype(int)  # Make integer
+        optMods_display["Notes"] = optMods_display[colName].str.extract(footnotePattern).fillna("")
+        st.write(optMods_display[optMods_display["Semester"]=="SEM1"][displayCols(optMods_display,["Module Code", "Module Title", "Semester", "Credits", "Exam Weight (%)", "Selected"])].to_html(index=False), unsafe_allow_html=True)
         
+        optFootnotesSEM1=getFootnotes(optModsSEM1)
+        if not optFootnotesSEM1.empty:
+            for _row in optFootnotesSEM1.itertuples():
+                st.info(f"**{_row.Footnote}**: {_row.Text}")
+
         # st.write("Optional modules (Autumn Semester)",optMods[optMods["Semester"]=="SEM1"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
     else:
         st.write("You have no optional selections to make for Autumn semester")
@@ -262,8 +302,15 @@ else:
         optMods_display = optMods.copy()
         optMods_display["Selected"] = optMods_display["Module Code"].isin(optModSelCodeSEM2).map({True: "✔️", False: ""})
         optMods_display["Exam Weight (%)"] = optMods_display["Exam Weight (%)"].astype(int)  # Make integer
-        st.write(optMods_display[optMods_display["Semester"]=="SEM2"][["Module Code", "Module Title", "Semester", "Credits", "Exam Weight (%)", "Selected"]].to_html(index=False), unsafe_allow_html=True)
+        optMods_display["Credits"] = optMods_display["Credits"].astype(int)  # Make integer
+        optMods_display["Notes"] = optMods_display[colName].str.extract(footnotePattern).fillna("")
+        st.write(optMods_display[optMods_display["Semester"]=="SEM2"][displayCols(optMods_display,["Module Code", "Module Title", "Semester", "Credits", "Exam Weight (%)", "Selected"])].to_html(index=False), unsafe_allow_html=True)
         # st.write("**Spring Semester**",optMods[optMods["Semester"]=="SEM2"][["Module Code","Module Title","Semester","Credits","Exam Weight (%)"]].to_html(index=False),unsafe_allow_html=True)
+
+        optFootnotesSEM2=getFootnotes(optModsSEM2)
+        if not optFootnotesSEM2.empty:
+            for _row in optFootnotesSEM2.itertuples():
+                st.info(f"**{_row.Footnote}**: {_row.Text}")
     else:
         optModSelCodeSEM2=[]
 
@@ -364,6 +411,30 @@ for _, row in msc_modules.iterrows():
 # Step 3: Append the MSc assessments to the original table
 AssessDatesAll = pd.concat([AssessDatesIn, msc_assessments], ignore_index=True)
 ContactTimeIn = pd.concat([ContactTimeIn, msc_contact], ignore_index=True)
+
+### Add modules with a Parent module code, reusing the Parent's assessment/contact data
+parent_modules = Modules[Modules["Parent"].notna()]
+
+parent_assessments = pd.DataFrame()
+parent_contact = pd.DataFrame()
+
+for _, row in parent_modules.iterrows():
+    parent_code = row["Parent"]
+    child_code = row["Module Code"]
+
+    # Find all assessment/contact entries for the parent module
+    original_assessments = AssessDatesAll[AssessDatesAll["Module Code"] == parent_code].copy()
+    original_contact = ContactTimeIn[ContactTimeIn["Module Code"] == parent_code].copy()
+
+    if not original_assessments.empty:
+        # Replace Module Code with the child's Module Code
+        original_assessments["Module Code"] = child_code
+        original_contact["Module Code"] = child_code
+        parent_assessments = pd.concat([parent_assessments, original_assessments], ignore_index=True)
+        parent_contact = pd.concat([parent_contact, original_contact], ignore_index=True)
+
+AssessDatesAll = pd.concat([AssessDatesAll, parent_assessments], ignore_index=True)
+ContactTimeIn = pd.concat([ContactTimeIn, parent_contact], ignore_index=True)
 # AssessDates.to_excel("assessments_with_msc_duplicates.xlsx", index=False)
 
 # Reduce to list of selected modules
