@@ -4,14 +4,14 @@ Student workload, published via Streamlit at [https://physx-student-workload.str
 
 Streamlit page is based on plot_student-workload.py
 
-It runs in "developer mode" when run locally, or when dev=1 is set in URL query (e.g. [physx-student-workload.streamlit.app?dev=1]([physx-student-workload.streamlit.app](https://physx-student-workload.streamlit.app/)?dev=1))
+It runs in "developer mode" when run locally, or when dev=1 is set in URL query (e.g. [physx-student-workload.streamlit.app?dev=1]([physx-student-workload.streamlit.app](https://physx-student-workload.streamlit.app/)?dev=1)). Developer mode shows previous deadlines (hidden in stardard view) and can have different options to select from.
 
 Use URL queries to affect settings:
 
 * **school**: (currently only PHYSX)
 * **dev**: (0 or blank for none, >0 for dev, ), and default years
-* **type**: student type (UG/PG)
-* **year**: student year (1-4))
+* **type**: pre-selected student type (UG/PG) [can be changed using options in app]
+* **year**: pre-selected student year (1-4) [can be changed using options in app]
 
 # Config file
 
