@@ -1,4 +1,5 @@
 import numpy as np
+import json
 import pandas as pd
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -34,12 +35,54 @@ def streamlit_cloud():
 
 params = st.query_params
 
+school = params.get("school") if "school" in params else "PHYSX"
 dev_mode = params.get("dev") if "dev" in params else 0
 try:
     dev_mode = int(dev_mode)
 except (ValueError, TypeError):
     st.warning('unable to convert "dev" parameter to integer, setting to 0')
     dev_mode = 0
+
+files={
+    "PHYSX":"config_PHYSX.json"
+}
+configFile=files[school]
+
+if not streamlit_cloud():
+    if dev_mode==-1:
+        st.warning("Running locally in standard mode")
+        useDev=False
+    else:
+        st.warning(f"Running locally in dveloper mode [{dev_mode}]")
+        useDev=True
+else:
+    if dev_mode>0:
+        st.warning(f"Running on Streamlit Cloud in developer mode  [{dev_mode}]")
+        useDev=True
+    else:
+        useDev=False
+
+# st.info(f"Using config file: {configFile}, school: {school}, dev_mode: {dev_mode}, stremlit_cloud: {streamlit_cloud()}")
+
+#load config file
+configData=json.load(open(configFile))
+
+#dev_mode updates
+configDev=configData["dev_updates"]
+
+defaults = configDev["defaults"] if useDev and "defaults" in configDev else configData["defaults"]
+academicYears = configDev["academicYears"] if useDev and "academicYears" in configDev else configData["academicYears"]
+easterWeeks = configDev["easterWeeks"] if useDev and "easterWeeks" in configDev else configData["easterWeeks"]
+startDates = configDev["startDates"] if useDev and "startDates" in configDev else configData["startDates"]
+filenames = configDev["filenames"] if useDev and "filenames" in configDev else configData["filenames"]
+coursetypes = configDev["coursetypes"] if useDev and "coursetypes" in configDev else configData["coursetypes"]
+courses = configDev["courses"] if useDev and "courses" in configDev else configData["courses"]
+years = configDev["years"] if useDev and "years" in configDev else configData["years"]
+columns = configDev["columns"] if useDev and "columns" in configDev else configData["columns"]
+
+for y in startDates:
+    for s in startDates[y]:
+        startDates[y][s]=datetime.strptime(startDates[y][s],"%d/%m/%Y")
 
 def year2level(year,yrtype="UG"):
     if yrtype=="PG":
@@ -52,57 +95,27 @@ if "year" in params:
         defStudentYear = int(params.get("year"))
     except (ValueError, TypeError):
         st.warning('unable to convert "year" parameter to integer, setting to 1')
-        defStudentYear = 1
+        defStudentYear = defaults["studentYear"]
 else:
-    defStudentYear = 1
+    defStudentYear = defaults["studentYear"]
 
 if "type" in params:
     defStudentType = params.get("type")
 else:
-    defStudentType = "UG"
+    defStudentType = defaults["courseType"]
 
 # Set student properties
-if (not streamlit_cloud() and dev_mode!=-1) or dev_mode>0:
-    # st.info('Running locally')
-    academicYears=["2025/6","2026/7","2026/7 (Proposed)"]
-    if dev_mode==2:
-        defYear=2
-    else:
-        defYear=1
-    if dev_mode>0:
-        st.warning("Developer mode enabled")
-    if not streamlit_cloud():
-        st.info("Running locally")
-    # academicYears=["2025/6"]# st.info('Running on streamlit cloud.')
-else:
-     academicYears=["2026/7"]
-     defYear=0
-
-easterWeeks={"2024/5":11,"2025/6":8,"2026/7":7,"2026/7 (Proposed)":7}
-startDates={"2024/5":{"Autumn":datetime(2024,9,30),"Spring":datetime(2025,1,27) },"2025/6":{"Autumn":datetime(2025,9,29),"Spring":datetime(2026,1,26)},"2026/7":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)},"2026/7 (Proposed)":{"Autumn":datetime(2026,10,5),"Spring":datetime(2027,2,1)}}
-filenames={"2024/5":"AssessmentSchedule_2425.xlsx","2025/6":"AssessmentSchedule_2526_v2.xlsx", "2026/7":"AssessmentSchedule_2627.xlsx", "2026/7 (Proposed)":"AssessmentSchedule_2627_v2.xlsx"}
-coursetypes=["UG","PG"]
-courses={"UG":["Show modules for all programmes","Physics","Astrophysics","Physics with Astronomy","Medical Physics"],
-         "PG":["Show modules for all programmes","Physics", "Astrophysics", "Data Intensive Physics", "Data Intensive Astrophysics","Compound Semiconductor Physics","CDT Compound Semiconductor Physics"]}
-years=[1,2,3,4]
-
-columns={"UG":{"Physics":"Physics","Astrophysics":"Astro","Physics with Astronomy":"PhysAstro","Medical Physics":"MedPhys","Show modules for all programmes":"AllUG"},
-         "PG":{"Physics":"MScPhysics", "Astrophysics":"MScAstro",
-               "Data Intensive Physics":"MScDataPhys",
-               "Data Intensive Astrophysics":"MScDataAstro",
-               "Compound Semiconductor Physics":"MScCSPhysics","CDT Compound Semiconductor Physics":"CDTCSPhysics",
-               "Show modules for all programmes":"AllPG"}}
-
 
 st.info("*This tool is designed to help students visualise their deadlines workload over the academic year. If any information here contracticts SIMS or Learning Central, then SIMS or Learning Central should be considered to be correct. In such cases, please contact the Module Organiser or Dr Chris North (Director of Undergraduate Studies).*")
 st.header("Select your year and course")
-academicYear = st.radio("Select the academic year:",academicYears,index=defYear)
+academicYear = st.radio("Select the academic year:",academicYears,index=academicYears.index(defaults["academicYear"]))
 studentCourseType = st.radio("Select your programme type:",coursetypes,index=coursetypes.index(defStudentType))
-if studentCourseType=="UG":
-    studentYear = st.radio("Select your year of study:",years,index=years.index(defStudentYear))
+if len(years[studentCourseType])>0:
+    studentYear = st.radio("Select your year of study:",years[studentCourseType],index=years[studentCourseType].index(defStudentYear))
 else:
     studentYear=1
 studentCourse = st.radio("Select your programme:",courses[studentCourseType])
+
 if academicYear=="2026/7" and studentCourseType == "UG" and studentYear==1 and studentCourse=="Physics with Astronomy":
     st.error("**WARNING:** Physics with Astronomy programmes are not available to new students from 2026/7 onwards.")
 studentLevel=year2level(studentYear,studentCourseType)
@@ -167,7 +180,7 @@ def displayCols(df,baseCols):
     return baseCols+["Notes"] if df["Notes"].ne("").any() else baseCols
 coreFootnotes=getFootnotes(coreMods)
 
-coreCredits=coreMods["Credits"].sum()
+coreCredits=int(coreMods["Credits"].sum())
 coreCreditsAutumn=coreMods[coreMods["Semester"]=="SEM1"]["Credits"].sum()+coreMods[coreMods["Semester"]=="SEMD"]["Credits"].sum()/2
 coreCreditsSpring=coreMods[coreMods["Semester"]=="SEM2"]["Credits"].sum()+coreMods[coreMods["Semester"]=="SEMD"]["Credits"].sum()/2
 
@@ -320,7 +333,7 @@ else:
     # st.write("Spring semester exams:", nExamsSpring)
     optModSelCode = optModSelCodeSEM1 + optModSelCodeSEM2
 optModSel=optMods[optMods["Module Code"].isin(optModSelCode)]        
-optCreditSel=optMods[optMods["Module Code"].isin(optModSelCode)]["Credits"].sum()
+optCreditSel=int(optMods[optMods["Module Code"].isin(optModSelCode)]["Credits"].sum())
 selModList=optModSelCode + coreModList
 
 selMod=Modules[Modules["Module Code"].isin(selModList)].rename(columns={colName:"Core/Optional"})
@@ -341,7 +354,7 @@ if not showAllMods and not showAllProgs:
 
 if not showAllMods:
     if optCreditSel<optCreditsAvail:
-        st.error(f"⚠️ Please select {optCreditsAvail-optCreditSel} more optional credits.")
+        st.error(f"⚠️ Please select {int(optCreditsAvail-optCreditSel)} more optional credits.")
         st.stop()
     elif optCreditSel>optCreditsAvail:
         st.error(f"⚠️ ERROR: You can only select {optCreditsAvail} optional credits. {optCreditSel} selected")
