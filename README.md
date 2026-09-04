@@ -81,7 +81,8 @@ Details of assessments for modules, with one row for each "group" of assessments
 
 * **Module Code**: Module Code
 * Auto-completed columns (from Modules sheet):
-* * **Module Title**: Module Title
+
+  * **Module Title**: Module Title
   * **CA Weight**: Weight of CA for whole module (in %)
   * **Credits**: module credits
 * **CA type**: Type of assessment.
