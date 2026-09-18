@@ -7,8 +7,8 @@
         },
         "academicYears":[
             "2025/6",
-            "2026/7",
-            "2026/7 (Proposed)"
+            "2026/7 (Initial)",
+            "2026/7"
         ]  
     },
     "defaults":{
@@ -40,8 +40,8 @@
     },
     "filenames":{
         "2025/6":"AssessmentSchedule_2526_v2.xlsx",
-        "2026/7":"AssessmentSchedule_2627.xlsx",
-        "2026/7 (Proposed)":"AssessmentSchedule_2627_v2.xlsx"
+        "2026/7 (Initial)":"AssessmentSchedule_2627.xlsx",
+        "2026/7":"AssessmentSchedule_2627_v2.xlsx"
     },
     "coursetypes":[
         "UG",
