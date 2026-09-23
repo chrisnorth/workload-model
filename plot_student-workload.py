@@ -856,6 +856,20 @@ elif showAllMods:
 else:
     title=f"Deadlines for {studentCourseType} {studentCourse} student in Year {studentYear}"
 
+def should_plot_weight(weight):
+    return (dev_mode > 0) or (weight >= 0)
+
+# Remove assessment and module rows that would be invisible in the selected mode.
+for sem in semesters:
+    for mod in list(dlGrid[sem]):
+        dlGrid[sem][mod]["grid"] = {
+            assessment: data
+            for assessment, data in dlGrid[sem][mod]["grid"].items()
+            if any(should_plot_weight(weight) for weight in data["weights"])
+        }
+        if not dlGrid[sem][mod]["grid"]:
+            del dlGrid[sem][mod]
+
 nMods=len(selMod)
 if nMods>20:
     figh=20
@@ -906,9 +920,6 @@ def weight2sizecolorlabel(w,portfolio=False):
     else:
         return {'ms':100,'barw':5,'ec':'red','lw':0,'fc':'red','lab':">30%",'textcol':'black','alpha':1}
 
-def should_plot_weight(weight):
-    return (dev_mode > 0) or (weight >= 0)
-    
 assessSeen={"Autumn":set(),"Spring":set()}
 handles={}
 labels={}
